@@ -63,7 +63,15 @@ class Either(Parsable):
     which = None
 
     def __init__(self, *options):
-        self.options = options
+        self.options = []
+        for o in options:
+            if isinstance(o, str):
+                if len(o) == 1:
+                    self.options.append(SingleChar(o))
+                else:
+                    self.options.append(SpecificWord(o))
+            else:
+                self.options.append(o)
 
     def read(self, text, position=0):
         for option in self.options:

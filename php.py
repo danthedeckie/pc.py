@@ -28,7 +28,7 @@ WHITESPACE = Word(' \t\n')
 
 SEMICOLON = SingleChar(';')
 
-COMMENTS_OR_WHITESPACE = Multiple(Either(WHITESPACE, COMMENT, Nothing))
+COMMENTS_OR_WHITESPACE = Multiple(Either(WHITESPACE, COMMENT, Nothing()))
 
 def phpitem(actual):
     ''' most php 'things' can be separated by (x) random amount of whitespace,

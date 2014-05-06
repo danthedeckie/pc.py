@@ -11,7 +11,7 @@
 from unittest import TestCase
 from test import PCTestCase
 
-from ..pc import *
+from pc import *
 from php import *
 
 class TestVar(PCTestCase):
@@ -80,7 +80,6 @@ class TestNumber(PCTestCase):
         # TODO
         pass
 
-
 class TestOperator(PCTestCase):
     def testGood(self):
         # TODO
@@ -97,7 +96,6 @@ class TestComment(PCTestCase):
         # TODO
         pass
 
-
 class TestWhiteSpace(PCTestCase):
     def testGood(self):
         # TODO
@@ -113,6 +111,90 @@ class TestCommentOrWhiteSpace(PCTestCase):
     def testBad(self):
         # TODO
         pass
+
+########################################
+
+# TODO: somehow tests for phpitem & PHPJoin?
+
+class TestThing(PCTestCase):
+    def testGood(self):
+        # TODO
+        pass
+    def testBad(self):
+        # TODO
+        pass
+
+class TestFuncApp(PCTestCase):
+    def testGood(self):
+        # TODO
+        pass
+    def testBad(self):
+        # TODO
+        pass
+    def testRecursive(self):
+        # TODO
+        pass
+
+class TestInfixed(PCTestCase):
+    def testGood(self):
+        # TODO
+        pass
+    def testBad(self):
+        # TODO
+        pass
+    def testRecursive(self):
+        # TODO
+        pass
+
+class TestExpr(PCTestCase):
+    def testGood(self):
+        # TODO
+        pass
+    def testBad(self):
+        # TODO
+        pass
+    def testRecursive(self):
+        # TODO
+        pass
+
+
+class TestStatement(PCTestCase):
+    def testGood(self):
+        text = 'echo "hi!";'
+        #P = STATEMENT.read(text)
+        # TODO
+        pass
+    def testBad(self):
+        # TODO
+        pass
+    def testRecursive(self):
+        # TODO
+        pass
+
+
+class TestAssignment(PCTestCase):
+    def testGood(self):
+        # TODO
+        pass
+    def testBad(self):
+        # TODO
+        pass
+    def testRecursive(self):
+        # TODO
+        pass
+
+
+class TestPHP_Line(PCTestCase):
+    def testGood(self):
+        # TODO
+        pass
+    def testBad(self):
+        # TODO
+        pass
+    def testRecursive(self):
+        # TODO
+        pass
+
 
 
 
