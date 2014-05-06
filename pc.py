@@ -1,3 +1,29 @@
+'''
+    pc.py - Copyright (C) 2014 Daniel Fairhead
+    ------------------------------------------
+    A simple parser-combinator library, experimental, for fun/learning/etc.
+    ------------------------------------------
+    GPL3 Licenced.
+
+    pc.py is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    StreetSign is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with pc.py.  If not, see <http://www.gnu.org/licenses/>.
+
+'''
+# pylint: disable=no-self-use, star-args
+
+################################################################################
+# Exceptions:
+
 class NotHere(Exception):
     ''' attempted to parse what you asked for, but there ain't one here.
         this is the primary mechanism for returning after a 'forward parse'
@@ -9,18 +35,19 @@ class TooGeneric(Exception):
         should never occur, as a more specific parser should be used... '''
 
 class Parsable(object):
+    ''' base class for all parsers '''
 
     def __or__(self, other):
         ''' combine two parsers '''
         return Either(self, other)
 
-    def read(self, text, position=0):
+    def read(self, text, position=0):  #pylint: disable=unused-argument
         ''' read instance from text, starting at position.
             return either the length that we parsed, or raise a 'NotHere'
             exception if it's not possible to parse one of these here. '''
         raise TooGeneric('Parsable!')
 
-    def output(self, data, clean=False):
+    def output(self, data, clean=False):  #pylint: disable=unused-argument
         ''' return the textual version of this parsable.  If 'clean' is false,
             then return it unchanged.  If 'clean' is true, then return it in
             a cleaned up state. '''
@@ -44,6 +71,7 @@ class Either(Parsable):
                 return option.read(text, position)
             except NotHere:
                 continue
+        raise NotHere
 
     def output(self, data, clean=False):
         raise TooGeneric('This is inside an Either!  It should have given '
@@ -64,11 +92,14 @@ class SingleChar(Parsable):
         self.data = {'class': self, 'text': letter}
 
     def read(self, text, position=0):
-        if text[position] == self.letter:
-            return 1, self.data
-        else:
-            raise NotHere('Expected "%s", got "%s"' %
-                            (self.letter, text[position]))
+        try:
+            if text[position] == self.letter:
+                return 1, self.data
+            else:
+                raise NotHere('Expected "%s", got "%s"' %
+                                (self.letter, text[position]))
+        except IndexError:
+            raise NotHere('EOF! Expected "%s"' % self.letter)
 
 class SpecificWord(Parsable):
     ''' parse a specific word '''
@@ -148,6 +179,10 @@ class Multiple(Joined):
         while True:
             try:
                 part_length, part_data = self.original.read(text, position + i)
+                # don't allow multiple 'Nothing' parses (as will be infinite)
+                if part_data['text'] == '': # nothing!
+                    if data['parts'] and data['parts'][-1]['text'] == '':
+                        raise NotHere
                 data['parts'].append(part_data)
                 i += part_length
             except NotHere:
@@ -162,6 +197,8 @@ class Multiple(Joined):
                     return i, data
 
 class Until(Parsable):
+    ''' accept any text, up until a certain 'end' marker '''
+
     def __init__(self, ending, escape=False):
         self.ending = ending
         self.escape = escape
@@ -178,19 +215,23 @@ class Until(Parsable):
 
 #class Spaced(*vargs):
 #    ''' join mulitple parsers together, with optional spaces... '''
-#    
+#
 
 #######################################################
 # Aliases, and other useful bits:
 
-def Optional(*vargs):
+def Optional(*vargs):  #pylint: disable=invalid-name
+    ''' sugar for Either + Nothing '''
     return Either(*list(vargs) + [Nothing()])
 
-LETTERS='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-NUMBERS='1234567890'
-SPACES=' \t'
+LETTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+NUMBERS = '1234567890'
+SPACES = ' \t'
 
 def output(parsed_block):
-    length, parsed = parsed_block
+    ''' go through a parsed tree, and output each thing as it thinks it should
+        be done.  If the parse was successful, then you should probably end up
+        with the same as you put in. '''
+    _, parsed = parsed_block
 
     return parsed['class'].output(parsed)
