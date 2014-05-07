@@ -214,12 +214,17 @@ class Until(Parsable):
 
     def read(self, text, position=0):
         data = {'class': self}
-        i = 0
-        while True:
-            if text[position + i:self.ending_length] == self.ending \
-            and text[position + i - 1] != self.escape:
-                data['text'] = text[position:position + i + self.ending_length]
-                return i + self.ending_length, data
+        i = -1
+        try:
+            while True:
+                i += 1
+                now = position + i
+                if text[now:now + self.ending_length] == self.ending \
+                and text[now - 1] != self.escape:
+                    data['text'] = text[position:now + self.ending_length]
+                    return i + self.ending_length, data
+        except IndexError:
+            return NotHere('EOF')
 
 #class Spaced(*vargs):
 #    ''' join mulitple parsers together, with optional spaces... '''

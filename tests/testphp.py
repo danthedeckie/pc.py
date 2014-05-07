@@ -66,8 +66,10 @@ class TestComplexVar(PCTestCase):
 
 class TestString(PCTestCase):
     def testGood(self):
-        # TODO
-        pass
+        text = '"this is a string"'
+        s = STRING.read(text)
+        self.assertHasRead(s, 18)
+        self.assertOutputs(s, text)
     def testBad(self):
         # TODO
         pass
@@ -161,7 +163,7 @@ class TestExpr(PCTestCase):
 class TestStatement(PCTestCase):
     def testGood(self):
         text = 'echo "hi!";'
-        #P = STATEMENT.read(text)
+        P = STATEMENT.read(text)
         # TODO
         pass
     def testBad(self):
@@ -200,8 +202,6 @@ class TestPHP_Line(PCTestCase):
 
 
 
-'''
-
 class TestPHPEcho(PCTestCase):
 
     def testEcho(self):
@@ -211,5 +211,3 @@ class TestPHPEcho(PCTestCase):
         for t in things:
             x = PHP_BLOCK.read(t)
             print x
-
-'''

@@ -60,11 +60,9 @@ class TestSingleA(PCTestCase):
         A_ = Multiple(Either(SingleChar('a'), Nothing()))
 
         a = A.read(text+text)
-        print a
         self.assertHasRead(a, 2)
 
         a = A.read(text * 4)
-        print a
         self.assertHasRead(a, 4)
 
     def testAthenB(self):
@@ -270,7 +268,6 @@ class TestEither(PCTestCase):
 
         with self.assertRaises(NotHere):
             p = E.read(text)
-            print p
 
     def testManySingleLetters(self):
 
@@ -313,7 +310,6 @@ class TestEither(PCTestCase):
 
         with self.assertRaises(NotHere):
             p = E.read(text)
-            print p
 
     def testTwoSingleLettersORsyntax(self):
 
@@ -348,7 +344,6 @@ class TestEither(PCTestCase):
 
         with self.assertRaises(NotHere):
             p = E.read(text)
-            print p
 
     def testManySingleLettersORsyntax(self):
 
@@ -391,7 +386,6 @@ class TestEither(PCTestCase):
 
         with self.assertRaises(NotHere):
             p = E.read(text)
-            print p
 
 
     def testWords(self):
@@ -411,4 +405,34 @@ class TestEither(PCTestCase):
         pass
 
 
+class TestUntil(PCTestCase):
+    def testSingleLetter(self):
+        text = 'thing another'
+        P = Until(' ')
+        p = P.read(text)
+        self.assertHasRead(p, 6)
+        self.assertOutputs(p, 'thing ')
+
+        text = 'thing '
+        p = P.read(text)
+        self.assertHasRead(p, 6)
+        self.assertOutputs(p, 'thing ')
+
+    def testWordEnding(self):
+        text = "START do stuff. END"
+        P = Until('END')
+        p = P.read(text)
+        self.assertHasRead(p, 19)
+        self.assertOutputs(p, text)
+
+        text1 = "START do stuff. END and some extra crap. END AGAIN"
+        p = P.read(text1)
+        self.assertHasRead(p, 19)
+        self.assertOutputs(p, text)
+
+    def testNoEnding(self):
+        pass
+
+    def testJoined(self):
+        pass
 
