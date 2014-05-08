@@ -188,7 +188,7 @@ class Multiple(Joined):
             try:
                 part_length, part_data = self.original.read(text, position + i)
                 # don't allow multiple 'Nothing' parses (as will be infinite)
-                if part_data['text'] == '': # nothing!
+                if part_data['class'].output(part_data) == '': # nothing!
                     if data['parts'] and data['parts'][-1]['text'] == '':
                         raise NotHere
                 data['parts'].append(part_data)
@@ -248,3 +248,10 @@ def output(parsed_block):
     _, parsed = parsed_block
 
     return parsed['class'].output(parsed)
+
+####################################
+# Ideas:
+# - Should Either, on init 'merge' sub-Either's into itself, rather
+#   than simply handing on to them?  This is a later stage optimisation...
+# - Should Either, on init move 'Nothing's to the end, rather than allowing
+#   them to possibly mess up the rest of the list?

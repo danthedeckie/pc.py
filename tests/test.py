@@ -404,6 +404,27 @@ class TestEither(PCTestCase):
         # TODO
         pass
 
+    def testWithNothing(self):
+        # TODO: add test for Nothing not at end of Either list!
+
+        E = Either(SpecificWord('chocolate'), Nothing())
+
+        text = 'chocolate!'
+
+        e = E.read(text)
+
+        self.assertHasRead(e, 9)
+        self.assertOutputs(e, 'chocolate')
+
+        text = 'other sweets'
+
+        e = E.read(text)
+
+        self.assertHasRead(e, 0)
+        self.assertOutputs(e, '')
+
+
+
 
 class TestUntil(PCTestCase):
     def testSingleLetter(self):
@@ -431,8 +452,47 @@ class TestUntil(PCTestCase):
         self.assertOutputs(p, text)
 
     def testNoEnding(self):
+        # TODO
         pass
 
     def testJoined(self):
+        # TODO
+        pass
+
+
+class TestMultiple(PCTestCase):
+    def testMulitLetters(self):
+        # TODO
+        pass
+
+    def testMultiEithers(self):
+        E = Either(SpecificWord('the'), SpecificWord('cat'))
+        S = Multiple(Either(Word(SPACES), E))
+
+        text = 'the cat sat on the mat'
+
+        s = S.read(text)
+
+        self.assertHasRead(s, 8)
+        self.assertOutputs(s, 'the cat ')
+
+        text = 'the the the cat, yo. remix!'
+
+        s = S.read(text)
+
+        self.assertHasRead(s, 15)
+        self.assertOutputs(s, 'the the the cat')
+
+    def testMultiNothings(self):
+        E = Either(SpecificWord('chocolate'), ' ')
+
+        text = 'chocolate!'
+
+        e = E.read(text)
+        # TODO
+        pass
+
+    def testMulitpleOptionals(self):
+        # TODO
         pass
 

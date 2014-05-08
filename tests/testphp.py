@@ -200,7 +200,7 @@ class TestPHP_Line(PCTestCase):
 
 
 
-
+'''
 
 class TestPHPEcho(PCTestCase):
 
@@ -211,3 +211,5 @@ class TestPHPEcho(PCTestCase):
         for t in things:
             x = PHP_BLOCK.read(t)
             print x
+
+'''
