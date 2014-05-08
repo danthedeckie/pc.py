@@ -41,6 +41,13 @@ class Parsable(object):
         ''' combine two parsers '''
         return Either(self, other)
 
+    def __repr__(self):
+        ''' for types which can, display themselves as a more useful form '''
+        try:
+            return '<%s:"%s">' % (self.__class__.__name__, self.data['text'])
+        except:
+            return '<%s>' % self.__class__.__name__
+
     def read(self, text, position=0):  #pylint: disable=unused-argument
         ''' read instance from text, starting at position.
             return either the length that we parsed, or raise a 'NotHere'
@@ -64,14 +71,34 @@ class Either(Parsable):
 
     def __init__(self, *options):
         self.options = []
-        for o in options:
-            if isinstance(o, str):
-                if len(o) == 1:
-                    self.options.append(SingleChar(o))
+        add_nothing = False
+
+        for option in options:
+            if isinstance(option, str):
+                if len(option) == 1:
+                    self.options.append(SingleChar(option))
                 else:
-                    self.options.append(SpecificWord(o))
+                    self.options.append(SpecificWord(option))
+            elif isinstance(option, Either):
+                for suboption in option.options:
+                    if isinstance(suboption, Nothing):
+                        add_nothing = True
+                        continue
+
+                    self.options.append(suboption)
+            elif isinstance(option, Nothing):
+                add_nothing = True
             else:
-                self.options.append(o)
+                self.options.append(option)
+
+        if add_nothing:
+            self.options.append(Nothing())
+
+        print self
+
+    def __repr__(self):
+        return '<%s:(%s)>' % (self.__class__.__name__,
+                              '|'.join(repr(i) for i in self.options))
 
     def read(self, text, position=0):
         for option in self.options:
@@ -160,6 +187,11 @@ class Joined(Parsable):
             else:
                 self.parts.append(p)
 
+    def __repr__(self):
+        return '<%s:(%s)>' % (self.__class__.__name__,
+                              '|'.join(i.__class__.__name__ for i in self.parts))
+
+
     def read(self, text, position=0):
         data = {'class': self,
                 'parts': []}
@@ -178,8 +210,18 @@ class Joined(Parsable):
 class Multiple(Joined):
     ''' accept multiple of a parsable. '''
     def __init__(self, original, allow_none=True):
+        assert allow_none in (True, False)
+
         self.original = original
         self.allow_none = True
+
+    def __repr__(self):
+        try:
+            return '<%s:(%s)>' % (self.__class__.__name__,
+                                  repr(self.original.__class__.__name__))
+        except RuntimeError:
+            return self.__class__.__name__
+
 
     def read(self, text, position=0):
         data = {'class': self, 'parts': []}

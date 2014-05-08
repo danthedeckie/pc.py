@@ -75,7 +75,7 @@ BLOCK = PHPJoin('{', Multiple(PHP_LINE), '}')
 IF = PHPJoin('if', EXPR, BLOCK | STATEMENT,
             Optional(Multiple(Joined(
                 Either('else if', 'elseif'), EXPR, BLOCK | STATEMENT))),
-            Optional(Multiple('else', BLOCK | STATEMENT)))
+            Optional(Multiple(Joined('else', BLOCK | STATEMENT))))
 
 PHP_LINE.options += (IF,)
 

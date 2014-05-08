@@ -484,11 +484,39 @@ class TestMultiple(PCTestCase):
         self.assertOutputs(s, 'the the the cat')
 
     def testMultiNothings(self):
-        E = Either(SpecificWord('chocolate'), ' ')
+
+        # 3 options, first succeeds:
+
+        E = Either(SpecificWord('chocolate'), ' ', Nothing())
 
         text = 'chocolate!'
 
         e = E.read(text)
+
+        self.assertHasRead(e, 9)
+        self.assertOutputs(e, 'chocolate')
+
+        # same options, but multiple.  First succeeds:
+
+        M = Multiple(E)
+
+        m = E.read(text)
+
+        self.assertHasRead(m, 9)
+        self.assertOutputs(m, 'chocolate')
+
+        # new options, option with Nothing PRECEDING matching option
+
+        ME = Multiple(Either(Either('?', Nothing()), E))
+
+        me = ME.read(text)
+
+        self.assertHasRead(me, 9)
+        self.assertOutputs(me, 'chocolate')
+
+
+
+
         # TODO
         pass
 
