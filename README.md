@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/danthedeckie/pc.py.svg?branch=master)](https://travis-ci.org/danthedeckie/pc.py)
+[![Build Status](https://travis-ci.org/danthedeckie/pc.py.svg?branch=master)](https://travis-ci.org/danthedeckie/pc.py) [![Coverage Status](https://img.shields.io/coveralls/danthedeckie/pc.py.svg)](https://coveralls.io/r/danthedeckie/pc.py?branch=master)
 
 PC, a simple python parser/combinator attempt, with then intention
 of parsing PHP (eventually), in a whitespace sensative manner, so that
