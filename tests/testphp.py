@@ -91,11 +91,11 @@ class TestOperator(PCTestCase):
         pass
 
 class TestComment(PCTestCase):
-#    def testLineComment(self):
-#        text = '// thing. '
-#        p = COMMENT.read(text)
-#        self.assertHasRead(p, 10)
-#        self.assertOutputs(p, text)
+    def testLineComment(self):
+        text = '// thing. '
+        p = COMMENT.read(text)
+        self.assertHasRead(p, 10)
+        self.assertOutputs(p, text)
 
     def testInlineComment(self):
         text = '/* hidden */'
@@ -139,32 +139,73 @@ class TestCommentsOrWhiteSpace(PCTestCase):
         self.assertHasRead(p, 7)
         self.assertOutputs(p, text)
 
-#    def testComment(self):
-#        text = '// thing. '
-#        p = COMMENTS_OR_WHITESPACE.read(text)
-#        self.assertHasRead(p, 10)
-#        self.assertOutputs(p, text)
+    def testComment(self):
+        text = '// thing. '
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, 10)
+        self.assertOutputs(p, text)
 
-    def testBad(self):
-        # TODO
-        pass
+    def testNone(self):
+        text = 'other stuff'
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, 0)
+        self.assertOutputs(p, '')
+
+    def testSpaceComment(self):
+        text = ' // space, then comment!'
+
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, len(text))
+        self.assertOutputs(p, text)
+
+    def testSpaceInlineCommentSpace(self):
+        text = ' /* inline comment */ '
+
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, len(text))
+        self.assertOutputs(p, text)
+
+    def testMixture(self):
+        text = '\n /* inline comment */\n /* more\n things */ \n // stuff\n  '
+
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, len(text))
+        self.assertOutputs(p, text)
+
+
 
 ########################################
-
 # TODO: somehow tests for phpitem & PHPJoin?
 
 class TestThing(PCTestCase):
-    def testGood(self):
-        # TODO
-        pass
+    def testVar(self):
+        self.assertReadsFully(THING, '$thing')
+        self.assertReadsFully(THING, '$thing->$more')
+        self.assertReadsFully(THING, '$thing->$more->$thing')
+        self.assertReadsFully(THING, 'CONST')
+        self.assertReadsFully(THING, '22')
+        self.assertReadsFully(THING, '3.14')
+        self.assertReadsFully(THING, '"text"')
+        self.assertReadsFully(THING, "'t\\'ext'")
+        self.assertReadsFully(THING, "blah ($x)")
+
     def testBad(self):
         # TODO
         pass
 
 class TestFuncApp(PCTestCase):
     def testGood(self):
-        # TODO
-        pass
+        self.assertReadsFully(THING, "blah($x)")
+        self.assertReadsFully(THING, "blah ($x)")
+        self.assertReadsFully(THING, "blah ($x, $y)")
+        self.assertReadsFully(THING, "blah($x, $y ,$z)")
+        self.assertReadsFully(THING, "blah ()")
+        self.assertReadsFully(THING, "blah(91)")
+        self.assertReadsFully(THING, "blah('text')")
+        self.assertReadsFully(THING, "blah(blah(22))")
+        self.assertReadsFully(THING, "blah(blah($thing->$subvar))")
+        self.assertReadsFully(THING, "blah(blah())")
+
     def testBad(self):
         # TODO
         pass
@@ -234,7 +275,6 @@ class TestPHP_Line(PCTestCase):
     def testRecursive(self):
         # TODO
         pass
-
 
 
 
