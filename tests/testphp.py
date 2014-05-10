@@ -195,16 +195,16 @@ class TestThing(PCTestCase):
 
 class TestFuncApp(PCTestCase):
     def testGood(self):
-        self.assertReadsFully(THING, "blah($x)")
-        self.assertReadsFully(THING, "blah ($x)")
-        self.assertReadsFully(THING, "blah ($x, $y)")
-        self.assertReadsFully(THING, "blah($x, $y ,$z)")
-        self.assertReadsFully(THING, "blah ()")
-        self.assertReadsFully(THING, "blah(91)")
-        self.assertReadsFully(THING, "blah('text')")
-        self.assertReadsFully(THING, "blah(blah(22))")
-        self.assertReadsFully(THING, "blah(blah($thing->$subvar))")
-        self.assertReadsFully(THING, "blah(blah())")
+        self.assertReadsFully(FUNC_APP, "blah($x)")
+        self.assertReadsFully(FUNC_APP, "blah ($x)")
+        self.assertReadsFully(FUNC_APP, "blah ($x, $y)")
+        self.assertReadsFully(FUNC_APP, "blah($x, $y ,$z)")
+        self.assertReadsFully(FUNC_APP, "blah ()")
+        self.assertReadsFully(FUNC_APP, "blah(91)")
+        self.assertReadsFully(FUNC_APP, "blah('text')")
+        self.assertReadsFully(FUNC_APP, "blah(blah(22))")
+        self.assertReadsFully(FUNC_APP, "blah(blah($thing->$subvar))")
+        self.assertReadsFully(FUNC_APP, "blah(blah())")
 
     def testBad(self):
         # TODO

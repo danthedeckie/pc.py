@@ -46,7 +46,7 @@ THING = Either(COMPLEX_VAR, CONST, STRING, NUMBER)
 
 # Hm.  This is annoying.  Recursive definitions are not easy with this schema:
 
-FUNC_APP = PHPJoin(WORD, '(', Multiple(PHPJoin(THING, ',')), ')')
+FUNC_APP = PHPJoin(WORD, '(', Either(THING, Multiple(PHPJoin(THING, ','))), ')')
 
 INFIXED = PHPJoin(THING, OPERATOR, THING)
 
@@ -54,7 +54,7 @@ EXPR = PHPJoin('(', THING, ')')
 
 
 # And add those into "THING" - before the 'simpler' options, as foo() needs to
-# be attempted before foo with no brackets.
+# be attempted before foo with no brackets, $a++ before $a, etc.
 
 THING.options = [FUNC_APP, INFIXED, EXPR] + THING.options
 

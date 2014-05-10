@@ -74,6 +74,7 @@ class Either(Parsable):
     def __init__(self, *options):
         self.options = []
         add_nothing = False
+        self.current_parses = {}
 
         for option in options:
             if isinstance(option, str):
@@ -101,9 +102,15 @@ class Either(Parsable):
                               '|'.join(repr(i) for i in self.options))
 
     def read(self, text, position=0):
+        if (text, position) in self.current_parses:
+            raise NotHere('Recursive...')
+        self.current_parses[(text, position)] = True
+
         for option in self.options:
             try:
-                return option.read(text, position)
+                x = option.read(text, position)
+                del self.current_parses[(text, position)]
+                return x
             except NotHere:
                 continue
         raise NotHere
@@ -214,6 +221,7 @@ class Multiple(Joined):
 
         self.original = original
         self.allow_none = True
+        self.current_parses = {}
 
     def __repr__(self):
         try:
@@ -224,6 +232,10 @@ class Multiple(Joined):
 
 
     def read(self, text, position=0):
+        if (text, position) in self.current_parses:
+            raise NotHere('Recursive...')
+        self.current_parses[(text, position)] = True
+
         data = {'class': self, 'parts': []}
         i = 0
         while True:
@@ -239,11 +251,13 @@ class Multiple(Joined):
                 if not data['parts'] and not self.allow_none:
                     raise
                 else:
+                    del self.current_parses[(text, position)]
                     return i, data
             except IndexError:
                 if not data['parts'] and not self.allow_none:
                     raise
                 else:
+                    del self.current_parses[(text, position)]
                     return i, data
 
 class Until(Parsable):
