@@ -14,7 +14,7 @@ CONST = WORD # TODO: really????????
 STRING = Joined('"', Until('"', escape='\\')) \
        | Joined("'", Until("'", escape='\\'))
 
-NUMBER = Joined(Word(NUMBERS), Optional('.', Word(NUMBERS)))
+NUMBER = Joined(Optional(SingleChar('-')), Word(NUMBERS), Optional(Joined('.', Word(NUMBERS))))
 
 OPERATOR = Either('+', '-', '/', '=', '.')
 
@@ -48,9 +48,7 @@ THING = Either(COMPLEX_VAR, CONST, STRING, NUMBER)
 
 FUNC_APP = PHPJoin(WORD,
                    '(',
-                   Either(Multiple(PHPJoin(THING, ','), allow_none=False),
-                          THING,
-                          Nothing()),
+                   Either(PHPJoin(THING, Multiple(PHPJoin(',', THING))), Nothing()),
                    ')')
 
 INFIXED = PHPJoin(THING, OPERATOR, THING)

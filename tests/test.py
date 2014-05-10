@@ -602,11 +602,19 @@ class TestMultiple(PCTestCase):
         self.assertHasRead(me, 9)
         self.assertOutputs(me, 'chocolate')
 
+    def testWithoutAllowedNone(self):
+        text = 'this is some text'
 
+        P = Multiple(Either('a','b','c'))
 
+        p = P.read(text)
 
-        # TODO
-        pass
+        self.assertEquals(output(p), '')
+
+        PF = Multiple(Either('a','b','c'), allow_none=False)
+
+        with self.assertRaises(NotHere):
+            pf = PF.read(text)
 
     def testMulitpleOptionals(self):
         # TODO

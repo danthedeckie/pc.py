@@ -66,18 +66,30 @@ class TestComplexVar(PCTestCase):
 
 class TestString(PCTestCase):
     def testGood(self):
-        text = '"this is a string"'
-        s = STRING.read(text)
-        self.assertHasRead(s, 18)
-        self.assertOutputs(s, text)
+        self.assertReadsFully(STRING, '"this is a string"')
+        self.assertReadsFully(STRING, '"this is a \\"sub\\" string"')
+        self.assertReadsFully(STRING, '"this isn\'t a problem"')
+        self.assertReadsFully(STRING, '""')
+
+        self.assertReadsFully(STRING, "'this is a string'")
+        self.assertReadsFully(STRING, "'this is\\'t a sub-quoted \"string\" string'")
+        self.assertReadsFully(STRING, "''")
+
+        # TODO: multi-line strings?
+
     def testBad(self):
         # TODO
         pass
 
 class TestNumber(PCTestCase):
     def testGood(self):
-        # TODO
-        pass
+        self.assertReadsFully(NUMBER, '3')
+        self.assertReadsFully(NUMBER, '3.14')
+        self.assertReadsFully(NUMBER, '300')
+        self.assertReadsFully(NUMBER, '300.9')
+        self.assertReadsFully(NUMBER, '-10')
+        self.assertReadsFully(NUMBER, '-10.28190')
+        self.assertReadsFully(NUMBER, '0')
     def testBad(self):
         # TODO
         pass
@@ -196,15 +208,17 @@ class TestThing(PCTestCase):
 class TestFuncApp(PCTestCase):
     def testGood(self):
         text = 'blah($s)'
-        a = PHPJoin(WORD,'(', Either(THING, Nothing())).read(text)
-        print a
+        a = PHPJoin(WORD,'(', Either(THING, Nothing()),')').read(text)
+        pretty_print(a)
         b = FUNC_APP.read(text)
-        print b
+
         self.assertReadsFully(FUNC_APP, "blah($x)")
         self.assertReadsFully(FUNC_APP, "blah ($x)")
         self.assertReadsFully(FUNC_APP, "blah ($x, $y)")
         self.assertReadsFully(FUNC_APP, "blah($x, $y ,$z)")
         self.assertReadsFully(FUNC_APP, "blah ()")
+        self.assertReadsFully(FUNC_APP, "blah ( )")
+        self.assertReadsFully(FUNC_APP, "blah (  )")
         self.assertReadsFully(FUNC_APP, "blah(91)")
         self.assertReadsFully(FUNC_APP, "blah('text')")
         self.assertReadsFully(FUNC_APP, "blah(blah(22))")

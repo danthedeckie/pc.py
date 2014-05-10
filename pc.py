@@ -116,7 +116,7 @@ class Either(Parsable):
                 return x
             except NotHere:
                 continue
-        raise NotHere
+        raise NotHere(repr(self))
 
     def output(self, data, clean=False):
         raise TooGeneric('This is inside an Either!  It should have given '
@@ -224,7 +224,7 @@ class Multiple(Joined):
         assert allow_none in (True, False)
 
         self.original = original
-        self.allow_none = True
+        self.allow_none = allow_none
         self.current_parses = {}
 
     def __repr__(self):
