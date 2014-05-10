@@ -18,7 +18,7 @@ NUMBER = Joined(Word(NUMBERS), Optional('.', Word(NUMBERS)))
 
 OPERATOR = Either('+', '-', '/', '=', '.')
 
-COMMENT_INLINE = Joined("/*", Until("*/"))
+COMMENT_INLINE = Joined("/*", Until("*/", fail_on_eof=True))
 COMMENT_LINE = Joined("//", Until("\n"))
 
 COMMENT = COMMENT_INLINE \
@@ -28,7 +28,7 @@ WHITESPACE = Word(' \t\n')
 
 SEMICOLON = SingleChar(';')
 
-COMMENTS_OR_WHITESPACE = Multiple(Either(WHITESPACE, COMMENT, Nothing()))
+COMMENTS_OR_WHITESPACE = Multiple(Either(WHITESPACE, COMMENT))
 
 def phpitem(actual):
     ''' most php 'things' can be separated by (x) random amount of whitespace,
@@ -63,9 +63,9 @@ THING.options += (FUNC_APP, INFIXED, EXPR)
 #
 
 STATEMENT_KEYWORDS = Either('echo', 'print')
-STATEMENT = PHPJoin(STATEMENT_KEYWORDS, THING, SEMICOLON)
+STATEMENT = Joined(PHPJoin(STATEMENT_KEYWORDS, THING), SEMICOLON)
 
-ASSIGNMENT = PHPJoin(THING, OPERATOR, THING, SEMICOLON)
+ASSIGNMENT = Joined(PHPJoin(THING, OPERATOR, THING), SEMICOLON)
 
 # Again with the freaking recursive definitions!
 PHP_LINE = Either(STATEMENT, ASSIGNMENT, Nothing())

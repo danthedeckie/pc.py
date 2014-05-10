@@ -15,14 +15,14 @@ from php import PHP_BLOCK
 
 class PCTestCase(TestCase):
     def assertHasRead(self, parsed, length):
-        assert parsed[0] == length
+        self.assertEquals(parsed[0], length)
 
     def assertTexts(self, parsed, texts):
         for a, b in zip(parsed[1]['parts'], texts):
-            assert a['text'] == b
+            self.assertEquals(a['text'], b)
 
     def assertOutputs(self, parsed, text):
-        assert output(parsed) == text
+        self.assertEquals(output(parsed), text)
 
 class TestNothing(PCTestCase):
     def testNothing(self):
@@ -428,32 +428,63 @@ class TestEither(PCTestCase):
 
 class TestUntil(PCTestCase):
     def testSingleLetter(self):
-        text = 'thing another'
         P = Until(' ')
-        p = P.read(text)
-        self.assertHasRead(p, 6)
-        self.assertOutputs(p, 'thing ')
+
+        # ends with ending:
 
         text = 'thing '
         p = P.read(text)
         self.assertHasRead(p, 6)
         self.assertOutputs(p, 'thing ')
 
+        # continues afterwards:
+
+        text = 'thing another'
+        p = P.read(text)
+        self.assertHasRead(p, 6)
+        self.assertOutputs(p, 'thing ')
+
+        # no ending:
+
+        text = 'thisisalongtext'
+        p = P.read(text)
+        self.assertHasRead(p, 15)
+        self.assertOutputs(p, text)
+
+        # no ending, please fail:
+
+        with self.assertRaises(NotHere):
+            p = Until(' ', fail_on_eof=True).read(text)
+
+
     def testWordEnding(self):
         text = "START do stuff. END"
+
+        # text ends with ending.
+
         P = Until('END')
         p = P.read(text)
         self.assertHasRead(p, 19)
         self.assertOutputs(p, text)
+
+        # text continues past ending
 
         text1 = "START do stuff. END and some extra crap. END AGAIN"
         p = P.read(text1)
         self.assertHasRead(p, 19)
         self.assertOutputs(p, text)
 
-    def testNoEnding(self):
-        # TODO
-        pass
+        # text doesn't have ending
+
+        text2 = "START do stuff. "
+        p = P.read(text2)
+        self.assertHasRead(p, 16)
+        self.assertOutputs(p, text2)
+
+        # no ending, please fail:
+
+        with self.assertRaises(NotHere):
+            p = Until('END', fail_on_eof=True).read(text2)
 
     def testJoined(self):
         # TODO

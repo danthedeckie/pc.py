@@ -91,9 +91,18 @@ class TestOperator(PCTestCase):
         pass
 
 class TestComment(PCTestCase):
-    def testGood(self):
-        # TODO
-        pass
+#    def testLineComment(self):
+#        text = '// thing. '
+#        p = COMMENT.read(text)
+#        self.assertHasRead(p, 10)
+#        self.assertOutputs(p, text)
+
+    def testInlineComment(self):
+        text = '/* hidden */'
+        p = COMMENT.read(text)
+        self.assertHasRead(p, 12)
+        self.assertOutputs(p, text)
+
     def testBad(self):
         # TODO
         pass
@@ -106,10 +115,36 @@ class TestWhiteSpace(PCTestCase):
         # TODO
         pass
 
-class TestCommentOrWhiteSpace(PCTestCase):
-    def testGood(self):
-        # TODO
-        pass
+class TestCommentsOrWhiteSpace(PCTestCase):
+    def testSingleSpace(self):
+        text = ' '
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, 1)
+        self.assertOutputs(p, text)
+
+    def testMultipleSpaces(self):
+        text = '   '
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, 3)
+        self.assertOutputs(p, text)
+
+    def testMultipleTypesOfSpaces(self):
+        text = '  \t '
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, 4)
+        self.assertOutputs(p, text)
+
+        text = '  \t\n\n  '
+        p = COMMENTS_OR_WHITESPACE.read(text)
+        self.assertHasRead(p, 7)
+        self.assertOutputs(p, text)
+
+#    def testComment(self):
+#        text = '// thing. '
+#        p = COMMENTS_OR_WHITESPACE.read(text)
+#        self.assertHasRead(p, 10)
+#        self.assertOutputs(p, text)
+
     def testBad(self):
         # TODO
         pass
@@ -176,8 +211,11 @@ class TestStatement(PCTestCase):
 
 class TestAssignment(PCTestCase):
     def testGood(self):
-        # TODO
-        pass
+        text = '$x = 21;'
+        p = ASSIGNMENT.read(text)
+        self.assertHasRead(p, 8)
+        self.assertOutputs(p, text)
+
     def testBad(self):
         # TODO
         pass
@@ -200,8 +238,8 @@ class TestPHP_Line(PCTestCase):
 
 
 
-'''
 
+'''
 class TestPHPEcho(PCTestCase):
 
     def testEcho(self):
@@ -211,5 +249,4 @@ class TestPHPEcho(PCTestCase):
         for t in things:
             x = PHP_BLOCK.read(t)
             print x
-
 '''

@@ -24,6 +24,8 @@
 ################################################################################
 # Exceptions:
 
+from types import GeneratorType
+
 class NotHere(Exception):
     ''' attempted to parse what you asked for, but there ain't one here.
         this is the primary mechanism for returning after a 'forward parse'
@@ -93,8 +95,6 @@ class Either(Parsable):
 
         if add_nothing:
             self.options.append(Nothing())
-
-        print self
 
     def __repr__(self):
         return '<%s:(%s)>' % (self.__class__.__name__,
@@ -249,22 +249,29 @@ class Multiple(Joined):
 class Until(Parsable):
     ''' accept any text, up until a certain 'end' marker '''
 
-    def __init__(self, ending, escape=False):
+    def __init__(self, ending, escape=False, fail_on_eof=False):
         self.ending = ending
         self.escape = escape
         self.ending_length = len(ending)
+        self.fail_on_eof = fail_on_eof
 
     def read(self, text, position=0):
         data = {'class': self}
         i = -1
+        end = len(text) - position
         try:
-            while True:
+            while i < end:
                 i += 1
                 now = position + i
                 if text[now:now + self.ending_length] == self.ending \
                 and text[now - 1] != self.escape:
                     data['text'] = text[position:now + self.ending_length]
                     return i + self.ending_length, data
+            if self.fail_on_eof:
+                raise NotHere('EOF')
+            else:
+                data['text'] = text[position:now + self.ending_length]
+                return i, data
         except IndexError:
             return NotHere('EOF')
 
@@ -291,9 +298,38 @@ def output(parsed_block):
 
     return parsed['class'].output(parsed)
 
-####################################
-# Ideas:
-# - Should Either, on init 'merge' sub-Either's into itself, rather
-#   than simply handing on to them?  This is a later stage optimisation...
-# - Should Either, on init move 'Nothing's to the end, rather than allowing
-#   them to possibly mess up the rest of the list?
+def pretty_print(parsed_block, level=0):
+    ''' take an output from the parser, and display it as a tree for easier
+        debugging, etc. '''
+    indent = level * ' '
+    if type(parsed_block) == tuple:
+        count, parsed_block = parsed_block
+        print indent + '%i chars parsed.' % count
+        print output((count, parsed_block))
+        pretty_print(parsed_block)
+    else:
+        print indent + parsed_block['class'].__class__.__name__ + ':' +  \
+            ('"' + parsed_block['text']+ '"' if 'text' in parsed_block else '')
+        if 'parts' in parsed_block:
+            for p in parsed_block['parts']:
+                pretty_print(p, level + 2)
+
+def parts(parsed):
+    ''' walk a parsed (dict) tree, yielding each part that has been found
+        and actually parsed (ignoring 'nothing's) '''
+
+    assert isinstance(parsed, dict)
+
+    if 'parts' in parsed:
+        for p in parsed['parts']:
+            o = parts(p)
+            if type(o) == GeneratorType:
+                for i in o:
+                    if i:
+                        yield i
+            else:
+                yield o
+    else:
+        if not isinstance(parsed.__class__, Nothing):
+            if 'text' in parsed:
+                yield parsed['text']
