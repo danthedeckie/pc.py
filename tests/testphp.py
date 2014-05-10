@@ -29,6 +29,8 @@ class TestVar(PCTestCase):
         self.assertHasRead(v, 10)
         self.assertOutputs(v, '$thing_two')
 
+        # TODO: test bracketed vars, complex_vars (with bracketing...)
+
     def testBad(self):
         text = '%other'
 
@@ -229,8 +231,10 @@ class TestFuncApp(PCTestCase):
         # TODO
         pass
     def testRecursive(self):
-        # TODO
-        pass
+        self.assertReadsFully(FUNC_APP, "blah(blah())")
+        self.assertReadsFully(FUNC_APP, "foo(bar(baz()))")
+        self.assertReadsFully(FUNC_APP, '''foo(bar(), baz(FIBBLE, $teapot),
+                                           $apricot)''')
 
 class TestInfixed(PCTestCase):
     def testGood(self):
@@ -271,10 +275,9 @@ class TestStatement(PCTestCase):
 
 class TestAssignment(PCTestCase):
     def testGood(self):
-        text = '$x = 21;'
-        p = ASSIGNMENT.read(text)
-        self.assertHasRead(p, 8)
-        self.assertOutputs(p, text)
+        self.assertReadsFully(ASSIGNMENT, '$x = 21;')
+        self.assertReadsFully(ASSIGNMENT, '$x =dostuff(21);')
+        self.assertReadsFully(ASSIGNMENT, '$x_the_thing=dostuff(21);')
 
     def testBad(self):
         # TODO
@@ -297,7 +300,6 @@ class TestPHP_Line(PCTestCase):
 
 
 
-
 '''
 class TestPHPEcho(PCTestCase):
 
@@ -308,4 +310,5 @@ class TestPHPEcho(PCTestCase):
         for t in things:
             x = PHP_BLOCK.read(t)
             print x
+
 '''

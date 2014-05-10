@@ -247,7 +247,7 @@ class Multiple(Joined):
                 part_length, part_data = self.original.read(text, position + i)
                 # don't allow multiple 'Nothing' parses (as will be infinite)
                 if part_data['class'].output(part_data) == '': # nothing!
-                    if data['parts'] and data['parts'][-1]['text'] == '':
+                    if data['parts'] and data['parts'][-1].get('text','?') == '':
                         raise NotHere
                 data['parts'].append(part_data)
                 i += part_length

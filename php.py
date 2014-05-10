@@ -6,9 +6,6 @@ VAR = Joined('$', Word(LETTERS + '_'))
 
 WORD = Word(LETTERS + '_')
 
-# $x->y, $x->$y->$z...
-COMPLEX_VAR = Joined(VAR, Multiple(Joined('->', VAR | WORD)))
-
 CONST = WORD # TODO: really????????
 
 STRING = Joined('"', Until('"', escape='\\')) \
@@ -41,8 +38,12 @@ class PHPJoin(Joined):
     def __init__(self, *parts):
         self.parts = [phpitem(part) for part in parts]
 
+THING = Either(CONST, STRING, NUMBER)
 
-THING = Either(COMPLEX_VAR, CONST, STRING, NUMBER)
+BRACKETED_VAR = Joined(VAR, Optional(Joined('[' ,THING ,']')))
+# $x->y, $x->$y->$z...
+COMPLEX_VAR = Joined(BRACKETED_VAR, Multiple(Joined('->', BRACKETED_VAR | WORD)))
+
 
 # Hm.  This is annoying.  Recursive definitions are not easy with this schema:
 
@@ -59,7 +60,7 @@ EXPR = PHPJoin('(', THING, ')')
 # And add those into "THING" - before the 'simpler' options, as foo() needs to
 # be attempted before foo with no brackets, $a++ before $a, etc.
 
-THING.options = [FUNC_APP, INFIXED, EXPR] + THING.options
+THING.options = [FUNC_APP, INFIXED, EXPR, COMPLEX_VAR] + THING.options
 
 ################################################################################
 #
@@ -83,6 +84,13 @@ IF = PHPJoin('if',
                  Either('else if', 'elseif'), EXPR, BLOCK | STATEMENT)),
              Multiple(Joined('else', BLOCK | STATEMENT)))
 
+# TODO: for, while, etc. function blocks, classes.
+
 PHP_LINE.options += (IF,)
 
 PHP_BLOCK = Joined('<?php', Multiple(PHP_LINE), '?>')
+
+# TODO: Once this all works, just as a general parser, then make custom class
+#       versions of all the parts we need, with passing of data (such as
+#       expected indent) through, and 'output' versions which actually do
+#       pretty printing, etc.
