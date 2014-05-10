@@ -195,6 +195,11 @@ class TestThing(PCTestCase):
 
 class TestFuncApp(PCTestCase):
     def testGood(self):
+        text = 'blah($s)'
+        a = PHPJoin(WORD,'(', Either(THING, Nothing())).read(text)
+        print a
+        b = FUNC_APP.read(text)
+        print b
         self.assertReadsFully(FUNC_APP, "blah($x)")
         self.assertReadsFully(FUNC_APP, "blah ($x)")
         self.assertReadsFully(FUNC_APP, "blah ($x, $y)")

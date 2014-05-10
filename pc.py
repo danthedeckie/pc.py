@@ -99,7 +99,10 @@ class Either(Parsable):
 
     def __repr__(self):
         return '<%s:(%s)>' % (self.__class__.__name__,
-                              '|'.join(repr(i) for i in self.options))
+                              '|'.join(i.__class__.__name__
+                                            for i in self.options))
+
+
 
     def read(self, text, position=0):
         if (text, position) in self.current_parses:
@@ -150,6 +153,7 @@ class SpecificWord(Parsable):
         self.length = len(word)
         self.data = {'class': self, 'text': word}
 
+
     def read(self, text, position=0):
         if text[position:position + self.length] == self.word:
             return self.length, self.data
@@ -196,7 +200,7 @@ class Joined(Parsable):
 
     def __repr__(self):
         return '<%s:(%s)>' % (self.__class__.__name__,
-                              '|'.join(i.__class__.__name__ for i in self.parts))
+                              '|'.join(repr(i).__class__.__name__ for i in self.parts))
 
 
     def read(self, text, position=0):
@@ -347,3 +351,6 @@ def parts(parsed):
         if not isinstance(parsed.__class__, Nothing):
             if 'text' in parsed:
                 yield parsed['text']
+
+# TODO: figure out if recursion limitiation has memory leak. ? add 'del' on
+#       raising NotHere as well.

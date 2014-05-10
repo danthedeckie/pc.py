@@ -46,7 +46,12 @@ THING = Either(COMPLEX_VAR, CONST, STRING, NUMBER)
 
 # Hm.  This is annoying.  Recursive definitions are not easy with this schema:
 
-FUNC_APP = PHPJoin(WORD, '(', Either(THING, Multiple(PHPJoin(THING, ','))), ')')
+FUNC_APP = PHPJoin(WORD,
+                   '(',
+                   Either(Multiple(PHPJoin(THING, ','), allow_none=False),
+                          THING,
+                          Nothing()),
+                   ')')
 
 INFIXED = PHPJoin(THING, OPERATOR, THING)
 
@@ -73,10 +78,12 @@ PHP_LINE = Either(STATEMENT, ASSIGNMENT, Nothing())
 
 BLOCK = PHPJoin('{', Multiple(PHP_LINE), '}')
 
-IF = PHPJoin('if', EXPR, BLOCK | STATEMENT,
-            Multiple(Joined(
-                Either('else if', 'elseif'), EXPR, BLOCK | STATEMENT)),
-            Multiple(Joined('else', BLOCK | STATEMENT)))
+IF = PHPJoin('if',
+             EXPR,
+             BLOCK | STATEMENT,
+             Multiple(Joined(
+                 Either('else if', 'elseif'), EXPR, BLOCK | STATEMENT)),
+             Multiple(Joined('else', BLOCK | STATEMENT)))
 
 PHP_LINE.options += (IF,)
 
