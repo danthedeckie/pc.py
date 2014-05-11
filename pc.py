@@ -309,13 +309,13 @@ LETTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 NUMBERS = '1234567890'
 SPACES = ' \t'
 
-def output(parsed_block):
+def output(parsed_block, clean=False):
     ''' go through a parsed tree, and output each thing as it thinks it should
         be done.  If the parse was successful, then you should probably end up
         with the same as you put in. '''
     _, parsed = parsed_block
 
-    return parsed['class'].output(parsed)
+    return parsed['class'].output(parsed, clean)
 
 def pretty_print(parsed_block, level=0):
     ''' take an output from the parser, and display it as a tree for easier
