@@ -74,7 +74,8 @@ class TestString(PCTestCase):
         self.assertReadsFully(STRING, '""')
 
         self.assertReadsFully(STRING, "'this is a string'")
-        self.assertReadsFully(STRING, "'this is\\'t a sub-quoted \"string\" string'")
+        self.assertReadsFully(STRING, "'this is\\'t a sub-quoted"
+                                      " \"string\" string'")
         self.assertReadsFully(STRING, "''")
 
         # TODO: multi-line strings?
@@ -202,6 +203,7 @@ class TestThing(PCTestCase):
         self.assertReadsFully(THING, '"text"')
         self.assertReadsFully(THING, "'t\\'ext'")
         self.assertReadsFully(THING, "blah ($x)")
+        self.assertReadsFully(THING, "$x + 18")
 
     def testBad(self):
         # TODO
@@ -217,6 +219,7 @@ class TestFuncApp(PCTestCase):
         self.assertReadsFully(FUNC_APP, "blah($x)")
         self.assertReadsFully(FUNC_APP, "blah ($x)")
         self.assertReadsFully(FUNC_APP, "blah ($x, $y)")
+        self.assertReadsFully(FUNC_APP, "blah ($x + $x, $y / 21)")
         self.assertReadsFully(FUNC_APP, "blah($x, $y ,$z)")
         self.assertReadsFully(FUNC_APP, "blah ()")
         self.assertReadsFully(FUNC_APP, "blah ( )")
@@ -238,8 +241,12 @@ class TestFuncApp(PCTestCase):
 
 class TestInfixed(PCTestCase):
     def testGood(self):
-        # TODO
-        pass
+        self.assertReadsFully(INFIXED, '2 + 21')
+        self.assertReadsFully(INFIXED, '$x + 21')
+        self.assertReadsFully(INFIXED, '$x + 21 + 8')
+        self.assertReadsFully(INFIXED, '$x + (21 + 87)')
+        self.assertReadsFully(INFIXED, '$x + 21 + 8 / funcop()')
+
     def testBad(self):
         # TODO
         pass
@@ -274,10 +281,24 @@ class TestStatement(PCTestCase):
 
 
 class TestAssignment(PCTestCase):
-    def testGood(self):
+    def testSimple(self):
         self.assertReadsFully(ASSIGNMENT, '$x = 21;')
         self.assertReadsFully(ASSIGNMENT, '$x =dostuff(21);')
-        self.assertReadsFully(ASSIGNMENT, '$x_the_thing=dostuff(21);')
+        self.assertReadsFully(ASSIGNMENT, '$x_the_thing = dostuff(21);')
+        self.assertReadsFully(ASSIGNMENT, '$x_the_thing     = dostuff(21);')
+        self.assertReadsFully(ASSIGNMENT, '$x_the_thing=NULL;')
+        self.assertReadsFully(ASSIGNMENT, '$x["value"] = $elephant->$trunk;')
+        self.assertReadsFully(ASSIGNMENT, '$x->$y->$z["value"] = $elephant->$trunk;')
+
+    def testSpacesAndCommentsInRandomPlaces(self):
+        self.assertReadsFully(ASSIGNMENT, '$x /* thing */ = 21;')
+        self.assertReadsFully(ASSIGNMENT, '''$x /* thing */ \n
+            = 21;''')
+        self.assertReadsFully(ASSIGNMENT, '''$x // thing 
+                                             = 21;''')
+        self.assertReadsFully(ASSIGNMENT, '''$x  =// thing 
+                                             21;''')
+
 
     def testBad(self):
         # TODO
@@ -289,8 +310,15 @@ class TestAssignment(PCTestCase):
 
 class TestPHP_Line(PCTestCase):
     def testGood(self):
-        # TODO
-        pass
+        # assignment:
+        self.assertReadsFully(PHP_LINE, "$x = 21;")
+        self.assertReadsFully(PHP_LINE, "$x = func(21);")
+        self.assertReadsFully(PHP_LINE, "$x = func(21); // comment")
+
+    def testMuliline(self):
+        self.assertReadsFully(PHP_LINE, '''$var // thing.
+                                            = more("stuff");''')
+
     def testBad(self):
         # TODO
         pass
@@ -300,15 +328,12 @@ class TestPHP_Line(PCTestCase):
 
 
 
-'''
 class TestPHPEcho(PCTestCase):
 
     def testEcho(self):
-        things = [
-            '<?php echo "hi"; ?>']
+        things = []
+        #    '<?php echo "hi"; ?>']
 
         for t in things:
             x = PHP_BLOCK.read(t)
             print x
-
-'''

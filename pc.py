@@ -158,7 +158,8 @@ class SpecificWord(Parsable):
         if text[position:position + self.length] == self.word:
             return self.length, self.data
         else:
-            raise NotHere('Expected "%s"' % self.word)
+            raise NotHere('Expected "%s", instead found: "%s"'
+                          % (self.word, text[position:position + len(self.word)]) )
 
 
 class Word(Parsable):
@@ -247,7 +248,7 @@ class Multiple(Joined):
                 part_length, part_data = self.original.read(text, position + i)
                 # don't allow multiple 'Nothing' parses (as will be infinite)
                 if part_data['class'].output(part_data) == '': # nothing!
-                    if data['parts'] and data['parts'][-1].get('text','?') == '':
+                    if data['parts'] and data['parts'][-1].get('text', '?') == '':
                         raise NotHere
                 data['parts'].append(part_data)
                 i += part_length
