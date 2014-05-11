@@ -10,7 +10,7 @@ looked interesting.
 ## The main primatives:
 
 class         | What is does:
--------------------------------------------------------------------------------
+------------- | ---------------------------------------------------------------
 SingleChar    | Matches a single character. (`a`, `;`, `(`, etc.)
 SpecificWord  | Matches a Specific word (`if`, `class`, `start`, etc.)
 Word          | Matches any word made up from a set of valid characters.
