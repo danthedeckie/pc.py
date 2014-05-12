@@ -116,6 +116,8 @@ you could easily make an indentation aware version:
             if clean and 'current_indent' in clean:
                 lines = data['text'].count('\n')
                 return (lines * '\n') + current_indent
+            else:
+                return data['text']
 
     INDENT = Indent(' \t\n')    
 ```
@@ -124,11 +126,55 @@ which will return the current indent level, with any extra newlines, and strips 
 extraneous spaces on blank newlines.
 
 Then you'd subclass your function & block parsers to increment and decrement
-clean['current_indent'] appropriately.
+`clean['current_indent']` appropriately.
 
 Since the parts are all python classes, you can subclass from them easily.  But also, once
 all the parsing stuff is done correctly and tested, I'd like to add some 'hooks' (`after_parse`,
-`before_output`, etc.)
+`before_output`, etc.) so that you can 'do stuff' without needing to subclass.
+
+## Extras:
+
+There are a couple of useful functions included for debugging & playing purposes:
+
+### `output(parsed_block, clean=False)`
+
+which traverses through the parsed tree, getting output through the `.output` methods of each
+class.  The `'clean'` object is passed all the way through the traversal, so you could use this
+to either send specific "flags" so lower parts of the tree ("clean up indentation", "rename
+variables that match global names", etc.) or to have parts of the parse tree return information
+to you (a list of all the variables, unused imports, etc).
+
+### `pretty_print(parsed_block, level=0)`
+
+prints out a parsed tree (to stdout) in a simplified
+
+```
+    Multiple:
+        Joined:
+            Word:"the"
+            Word:" "
+        Joined:
+            Word":"cat"
+            Word:" "
+        Joined:
+            Word:"sat"
+            Word":" "
+```
+
+type of manner.
+
+### `parts(parsed)`
+
+returns a generator, which walks through the tree yielding each textual match
+as it finds it.
+
+```python
+    >>> [x for x in parts(example)]
+    ['the', ' ', 'cat', ' ', 'sat']
+```
+
+for instance.
+
 
 # Current Status:
 
