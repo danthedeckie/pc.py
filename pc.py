@@ -117,15 +117,22 @@ class Either(Parsable):
             raise NotHere('Recursive Either... (%s)(%i)' % (text, position))
         self.current_parses[(text, position)] = True
 
+        # If an option returns a Nothing (doesn't consume any text) then it
+        # may be valid, but we should try later options before accepting it.
+        result = False
+
         for option in self.options:
             try:
-                x = option.read(text, position)
-                del self.current_parses[(text, position)]
-                return x
+                result = option.read(text, position)
+                if result[0]:
+                    break
             except NotHere:
                 continue
 
         del self.current_parses[(text, position)]
+        if result != False:
+            return result
+
         raise NotHere("%s:%s:%i" % (repr(self), text, position))
 
     def output(self, data, clean=False):
@@ -257,9 +264,9 @@ class Multiple(Joined):
 
 
     def read(self, text, position=0):
-        if (text, position) in self.current_parses:
-            raise NotHere('Recursive...')
-        self.current_parses[(text, position)] = True
+        #if (text, position) in self.current_parses:
+        #    raise NotHere('Recursive...')
+        #self.current_parses[(text, position)] = True
 
         data = {'class': self, 'parts': []}
         i = 0
@@ -276,10 +283,10 @@ class Multiple(Joined):
             except IndexError:
                 break
 
-        if not data['parts'] and not self.allow_none:
+        if data['parts'] == [] and not self.allow_none:
             raise
         else:
-            del self.current_parses[(text, position)]
+            #del self.current_parses[(text, position)]
             return i, data
 
 class Until(Parsable):

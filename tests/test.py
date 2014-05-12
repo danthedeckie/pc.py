@@ -419,7 +419,7 @@ class TestEither(PCTestCase):
     def testRecursiveEither(self):
         E = Either('a', 'b')
         EE = Either(E, ' ')
-        EE.options += (EE,)
+        EE.options += (EE, )
 
         # all normal reading is OK:
 
@@ -434,7 +434,7 @@ class TestEither(PCTestCase):
 
         # add a new option AFTER the recursive EE
 
-        EE.options += (SingleChar('c'),)
+        EE.options += (SingleChar('c'), )
 
         self.assertReadsFully(EE, 'c')
 
@@ -459,7 +459,17 @@ class TestEither(PCTestCase):
         self.assertHasRead(e, 0)
         self.assertOutputs(e, '')
 
+    def testEitherMultipleAfter(self):
+        M = Multiple(Either('a','b','c'))
+        E = Either('1','2', M, '3')
 
+        self.assertReadsFully(E, '1')
+        self.assertReadsFully(E, '2')
+        self.assertReadsFully(E, 'a')
+        self.assertReadsFully(E, 'b')
+        self.assertReadsFully(E, 'abc')
+        self.assertReadsFully(E, '')  # mulitple matches '' on failure...
+        self.assertReadsFully(E, '3')
 
 
 class TestUntil(PCTestCase):
@@ -581,18 +591,18 @@ class TestMultiple(PCTestCase):
     def testMultiLetters(self):
         P = Multiple(SingleChar('a'))
 
-        self.assertReadsFully(P,'')
-        self.assertReadsFully(P,'a')
-        self.assertReadsFully(P,'aaaaaaaaaa')
+        self.assertReadsFully(P, '')
+        self.assertReadsFully(P, 'a')
+        self.assertReadsFully(P, 'aaaaaaaaaa')
 
-        P = Multiple(Either('a','b','c'))
+        P = Multiple(Either('a', 'b', 'c'))
 
-        self.assertReadsFully(P,'')
-        self.assertReadsFully(P,'a')
-        self.assertReadsFully(P,'b')
-        self.assertReadsFully(P,'c')
-        self.assertReadsFully(P,'abc')
-        self.assertReadsFully(P,'abcbbaaaaccabaccabbaaaa')
+        self.assertReadsFully(P, '')
+        self.assertReadsFully(P, 'a')
+        self.assertReadsFully(P, 'b')
+        self.assertReadsFully(P, 'c')
+        self.assertReadsFully(P, 'abc')
+        self.assertReadsFully(P, 'abcbbaaaaccabaccabbaaaa')
 
     def testMultiEithers(self):
         E = Either(SpecificWord('the'), SpecificWord('cat'))
@@ -646,34 +656,34 @@ class TestMultiple(PCTestCase):
     def testWithoutAllowedNone(self):
         text = 'this is some text'
 
-        P = Multiple(Either('a','b','c'))
+        P = Multiple(Either('a', 'b', 'c'))
 
         p = P.read(text)
 
         self.assertEquals(output(p), '')
 
-        PF = Multiple(Either('a','b','c'), allow_none=False)
+        PF = Multiple(Either('a', 'b', 'c'), allow_none=False)
 
         with self.assertRaises(NotHere):
             pf = PF.read(text)
 
     def testRecursiveMultiple(self):
-        E = Either('a','b')
+        E = Either('a', 'b')
         M = Multiple(E)
-        E.options += (M,)
+        E.options += (M, )
 
-        self.assertReadsFully(M,'')
-        self.assertReadsFully(M,'a')
-        self.assertReadsFully(M,'abaabbabaab')
+        self.assertReadsFully(M, '')
+        self.assertReadsFully(M, 'a')
+        self.assertReadsFully(M, 'abaabbabaab')
 
         # and now with options AFTER the Mulitple (test continues after attempt)
 
-        E.options += (SingleChar('c'),)
+        E.options += (SingleChar('c'), )
 
-        self.assertReadsFully(M,'')
-        self.assertReadsFully(M,'a')
-        self.assertReadsFully(M,'c')
-        self.assertReadsFully(M,'abcaacbbabcccccaab')
+        self.assertReadsFully(M, '')
+        self.assertReadsFully(M, 'a')
+        self.assertReadsFully(M, 'c')
+        self.assertReadsFully(M, 'abcaacbbabcccccaab')
 
 
 
