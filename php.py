@@ -27,7 +27,8 @@
 from pc import *
 
 
-# TODO: for, while, etc. function blocks, classes.
+# TODO: function blocks, classes.
+# TODO: switch, continue & break
 # TODO: ternary operators
 # TODO: Once this all works, just as a general parser, then make custom class
 #       versions of all the parts we need, with passing of data (such as
@@ -52,7 +53,10 @@ NUMBER = Joined(Optional(SingleChar('-')),
                 Word(NUMBERS),
                 Optional(Joined('.', Word(NUMBERS))))
 
-OPERATOR = Either('===', '!==', '!=', '==', '+', '-', '/', '=', '.')
+OPERATOR = Either('===', '!==', '!=', '==',
+                  '+=', '-=', '/=', '.=',
+                  '+', '-', '/', '=', '.',
+                  '>', '<', '<<', '>>')
 
 COMMENT_INLINE = Joined("/*", Until("*/", fail_on_eof=True))
 COMMENT_LINE = Joined("//", Until("\n"))
@@ -77,11 +81,16 @@ def phpitem(actual):
         or comments.  that's just the way it is... '''
     return Joined(COMMENTS_OR_WHITESPACE, actual, COMMENTS_OR_WHITESPACE)
 
-
 class PHPJoin(Joined):
     ''' wrap a list of otherwise sensible parsers in PHPItem(s). '''
     def __init__(self, *parts):
         self.parts = [phpitem(part) for part in parts]
+
+def phpmulti(parsable, separator):
+    ''' takes a parsable thing, and returns a version of it that can accept
+        multiple instances, separated by separator. So phpMulti("x",",")
+        would accept x or x,x or x,x,x,x,x,x,x '''
+    return PHPJoin(parsable, Multiple(PHPJoin(separator, parsable)))
 
 ################################################################################
 #
@@ -91,18 +100,18 @@ class PHPJoin(Joined):
 
 THING = Either(CONST, STRING, NUMBER)
 
-BRACKETED_VAR = Joined(VAR, Optional(Joined('[' ,THING ,']')))
+BRACKETED_VAR = Joined(VAR, Optional(Joined('[', THING, ']')))
 # $x->y, $x->$y->$z...
 COMPLEX_VAR = Joined(BRACKETED_VAR, Multiple(Joined('->', BRACKETED_VAR | WORD)))
 
+INPLACE_CHANGE = Either(PHPJoin(Either('--', '++'), COMPLEX_VAR),
+                        PHPJoin(COMPLEX_VAR, Either('--', '++')))
 
 # Hm.  This is annoying.  Recursive definitions are not easy with this schema:
 
 FUNC_APP = PHPJoin(WORD,
                    '(',
-                   Either(PHPJoin(THING,
-                                  Multiple(PHPJoin(',', THING))),
-                          Nothing()),
+                   Either(phpmulti(THING, ','), Nothing()),
                    ')')
 
 EXPR = PHPJoin('(', THING, ')')
@@ -110,28 +119,33 @@ EXPR = PHPJoin('(', THING, ')')
 # infix operations slightly different - they can't contain themselves, or else
 # it becomes too recursive...
 
-INFIXED = PHPJoin(Either(FUNC_APP, COMPLEX_VAR, EXPR, CONST, STRING, NUMBER),
+INFIXED = PHPJoin(Either(FUNC_APP, INPLACE_CHANGE, COMPLEX_VAR, EXPR, CONST,
+                         STRING, NUMBER),
                   OPERATOR, THING)
 
 # And add those into "THING" - before the 'simpler' options, as foo() needs to
 # be attempted before foo with no brackets, $a++ before $a, etc.
 
-THING.options = [FUNC_APP, INFIXED, EXPR, COMPLEX_VAR] + THING.options
+THING.options = [FUNC_APP, INFIXED, EXPR, INPLACE_CHANGE, COMPLEX_VAR] \
+              + THING.options
 
 ################################################################################
 #
 # And now to actual 'complete' lines/parses:
 #
 
-STATEMENT_KEYWORDS = Either('echo', 'print')
-STATEMENT = Joined(PHPJoin(STATEMENT_KEYWORDS, THING), SEMICOLON)
+STATEMENT_KEYWORDS = Either('echo', 'print', 'return')
+KEYWORD_STATEMENT = PHPJoin(STATEMENT_KEYWORDS, THING)
 
-ASSIGNMENT = Joined(PHPJoin(COMPLEX_VAR, OPERATOR, THING), SEMICOLON)
+ASSIGNMENT = PHPJoin(COMPLEX_VAR, OPERATOR, THING)
 
 # Again with the freaking recursive definitions!
-PHP_LINE = Either(STATEMENT, ASSIGNMENT)
+PHP_LINE = PHPJoin(Either(KEYWORD_STATEMENT, ASSIGNMENT, INPLACE_CHANGE),
+                SEMICOLON)
 
-BLOCK = PHPJoin('{', Multiple(PHP_LINE), '}')
+STATEMENT = Either(PHP_LINE)
+
+BLOCK = PHPJoin('{', Multiple(STATEMENT), '}')
 
 IF = PHPJoin('if',
              EXPR,
@@ -140,12 +154,23 @@ IF = PHPJoin('if',
                  Either('else if', 'elseif'), EXPR, BLOCK | STATEMENT)),
              Multiple(Joined('else', BLOCK | STATEMENT)))
 
-PHP_LINE.options += (IF, Nothing())
-PHP_LINE = Joined(PHP_LINE, COMMENTS_OR_WHITESPACE)
+FOR_CONDITIONS = PHPJoin(phpmulti(ASSIGNMENT, ','), SEMICOLON,
+                         phpmulti(INFIXED, ','), SEMICOLON,
+                         phpmulti(THING, ','))
+
+FOREACH_CONDITIONS = PHPJoin(COMPLEX_VAR, 'as', Either(PHPJoin(VAR, '=>', VAR),
+                                                               VAR))
+
+FOR = PHPJoin('for', '(', FOR_CONDITIONS, ')', BLOCK | STATEMENT)
+FOREACH = PHPJoin('foreach', '(', FOREACH_CONDITIONS, ')', BLOCK | STATEMENT)
+WHILE = PHPJoin('while', '(', THING, ')', BLOCK | STATEMENT)
+
+STATEMENT.options += (IF, FOR, FOREACH, WHILE, Nothing())
+STATEMENT_ = Joined(STATEMENT, COMMENTS_OR_WHITESPACE)
 
 ################################################################################
 #
 # And Parse PHP files, from <?php ... to the end.
 
-PHP_BLOCK = Joined('<?php', Multiple(PHP_LINE), '?>')
+PHP_BLOCK = Joined('<?php', Multiple(STATEMENT_), '?>')
 # TODO: files which end w/o closing ?>

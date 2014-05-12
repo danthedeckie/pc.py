@@ -284,22 +284,22 @@ class TestStatement(PCTestCase):
 
 class TestAssignment(PCTestCase):
     def testSimple(self):
-        self.assertReadsFully(ASSIGNMENT, '$x = 21;')
-        self.assertReadsFully(ASSIGNMENT, '$x =dostuff(21);')
-        self.assertReadsFully(ASSIGNMENT, '$x_the_thing = dostuff(21);')
-        self.assertReadsFully(ASSIGNMENT, '$x_the_thing     = dostuff(21);')
-        self.assertReadsFully(ASSIGNMENT, '$x_the_thing=NULL;')
-        self.assertReadsFully(ASSIGNMENT, '$x["value"] = $elephant->$trunk;')
-        self.assertReadsFully(ASSIGNMENT, '$x->$y->$z["value"] = $elephant->$trunk;')
+        self.assertReadsFully(ASSIGNMENT, '$x = 21')
+        self.assertReadsFully(ASSIGNMENT, '$x =dostuff(21)')
+        self.assertReadsFully(ASSIGNMENT, '$x_the_thing = dostuff(21)')
+        self.assertReadsFully(ASSIGNMENT, '$x_the_thing     = dostuff(21)')
+        self.assertReadsFully(ASSIGNMENT, '$x_the_thing=NULL')
+        self.assertReadsFully(ASSIGNMENT, '$x["value"] = $elephant->$trunk')
+        self.assertReadsFully(ASSIGNMENT, '$x->$y->$z["value"] = $elephant->$trunk')
 
     def testSpacesAndCommentsInRandomPlaces(self):
-        self.assertReadsFully(ASSIGNMENT, '$x /* thing */ = 21;')
+        self.assertReadsFully(ASSIGNMENT, '$x /* thing */ = 21')
         self.assertReadsFully(ASSIGNMENT, '''$x /* thing */ \n
-            = 21;''')
+            = 21''')
         self.assertReadsFully(ASSIGNMENT, '''$x // thing 
-                                             = 21;''')
+                                             = 21''')
         self.assertReadsFully(ASSIGNMENT, '''$x  =// thing 
-                                             21;''')
+                                             21''')
 
 
     def testBad(self):
@@ -321,17 +321,31 @@ class TestIf(PCTestCase):
                 if ($y == 19) { echo "still good"; }
                 }""")
 
+class TestFORConditions(PCTestCase):
+    def testGood(self):
+        self.assertReadsFully(FOR_CONDITIONS, '$x=21;$x<200;$x++')
+        self.assertReadsFully(FOR_CONDITIONS, '$x=21,$y = 0;$x<200;$x++')
+        self.assertReadsFully(FOR_CONDITIONS, '''$x= "string", $y = 0;
+                                                $y < 200, len($x) < 100 ;
+                                                /*increment */ $x .= "+" ''')
+
 class TestPHP_Line(PCTestCase):
     def testGood(self):
         # assignment:
         self.assertReadsFully(PHP_LINE, "$x = 21;")
         self.assertReadsFully(PHP_LINE, "$x = func(21);")
         self.assertReadsFully(PHP_LINE, "$x = func(21); // comment")
-        self.assertReadsFully(PHP_LINE, "if ($x == 21) { echo 'yep.'; }")
-
     def testMuliline(self):
         self.assertReadsFully(PHP_LINE, '''$var // thing.
                                             = more("stuff");''')
+
+
+class TestPHPStatement(PCTestCase):
+    def testGood(self):
+        self.assertReadsFully(STATEMENT, "if ($x == 21) { echo 'yep.'; }")
+        self.assertReadsFully(STATEMENT, "for ($x = 21; $x<299; $x++) { echo 'yep.'; }")
+        self.assertReadsFully(STATEMENT, 'foreach ($x as $y) { echo "y:$y"; }')
+        self.assertReadsFully(STATEMENT, "foreach ($xs as $k =>$v) { echo 'yep.'; }")
 
     def testBad(self):
         # TODO
@@ -349,6 +363,13 @@ class TestPHPEcho(PCTestCase):
             '<?php echo "hi"; ?>',
             '<?php $x = 21; ?>',
             '<?php if($x == 21) { echo "hi"; } ?>',
+            '''<?php for($x=0;$x<200;$x++) {
+                    echo $x; } ?>''',
+            '''<?php
+                    for($x=0; $x<200; $x++)
+                        echo $x;
+                ?>'''
+
             ]
 
         for t in things:
