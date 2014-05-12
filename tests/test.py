@@ -406,8 +406,39 @@ class TestEither(PCTestCase):
         pass
 
     def testEitherEither(self):
-        # TODO
-        pass
+        E = Either('a', 'b')
+        EE = Either(E, ' ')
+
+        with self.assertRaises(NotHere):
+            E.read(' ')
+
+        self.assertReadsFully(EE, ' ')
+        self.assertReadsFully(EE, 'a')
+        self.assertReadsFully(EE, 'b')
+
+    def testRecursiveEither(self):
+        E = Either('a', 'b')
+        EE = Either(E, ' ')
+        EE.options += (EE,)
+
+        # all normal reading is OK:
+
+        self.assertReadsFully(EE, ' ')
+        self.assertReadsFully(EE, 'a')
+        self.assertReadsFully(EE, 'b')
+
+        # But reading an unknown char fails:
+
+        with self.assertRaises(NotHere):
+            EE.read('c')
+
+        # add a new option AFTER the recursive EE
+
+        EE.options += (SingleChar('c'),)
+
+        self.assertReadsFully(EE, 'c')
+
+
 
     def testWithNothing(self):
         # TODO: add test for Nothing not at end of Either list!
@@ -620,3 +651,23 @@ class TestMultiple(PCTestCase):
         # TODO
         pass
 
+class TestShouldNotBeReachable(TestCase):
+    ''' these tests should never actually be reachable in normal code.
+        all they do is raise exceptions when someone implements something
+        badly.  Of course these aren't included to improve coverage score...'''
+
+    def testParsableRead(self):
+        P = Parsable()
+        with self.assertRaises(TooGeneric):
+            P.read('text')
+
+    def testParsableOutput(self):
+        P = Parsable()
+        self.assertEquals(P.output({'class': P, 'text': 'stuff' }), 'stuff')
+
+        with self.assertRaises(TooGeneric):
+            P.output({'class': P })
+
+    def testParsableRepr(self):
+        P = Parsable()
+        self.assertEquals(repr(P), '<Parsable>')
