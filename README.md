@@ -1,11 +1,15 @@
 [![Build Status](https://travis-ci.org/danthedeckie/pc.py.svg?branch=master)](https://travis-ci.org/danthedeckie/pc.py) [![Coverage Status](https://img.shields.io/coveralls/danthedeckie/pc.py.svg)](https://coveralls.io/r/danthedeckie/pc.py?branch=master)
 
-PC, a simple python parser/combinator attempt, with then intention
+PC, a simple python parser/combinator attempt, with the intention
 of parsing PHP (eventually), in a whitespace sensative manner, so that
 it can either be cleaned up, or otherwise useful.
 
 Mainly because I've never written a parser-combinator lib before, and it
 looked interesting.
+
+I've avoided using any regexps at all so far.  The total parser/library is
+around 400 lines, about 100 of which are comments/docstrings/blank, so it should be
+very easy to read through and understand.
 
 ## The main primatives:
 
@@ -18,11 +22,11 @@ Until         | Matches anything up until an 'end' marker (e.g. `comment until *
 Nothing       | always matches, but consumes 0 characters.
 Joined        | Joins two (or more) other parsables into a single unit.
 Either        | Matches any 1 of a selection of parsables
-Multiple      | Matches a parsable mulitple (or 0, if you want) times.
+Multiple      | Matches a parsable multiple (or 0, if you want) times.
 
 ## Conceptual usage:
 
-You put together Parsable groups using the above primatives:
+You put together Parsable groups using the above primitives:
 
 ```python
     PIE = SpecificWord('Lemon meringue pie')
@@ -43,7 +47,8 @@ and it will return a tuple: `(chars_read, dict of parsed parts)`:
 ```
 
 each part of the dict usually has a `"text"` or other data that was parsed, and a `class` key
-which points to the actual type of data that has been parsed.
+which points to the actual type of data that has been parsed.  For complex parts, (Joined, etc.)
+it won't have a `text`, but the sub-parts will.
 
 ### Errors:
 
@@ -124,6 +129,15 @@ clean['current_indent'] appropriately.
 Since the parts are all python classes, you can subclass from them easily.  But also, once
 all the parsing stuff is done correctly and tested, I'd like to add some 'hooks' (`after_parse`,
 `before_output`, etc.)
+
+# Current Status:
+
+I'm writing a PHP parser (also included here, called: php.py) which is very very very much
+in progress.  The main pc.py parsed-combinator lib seems at about the stage where I can do that.
+I'm sure I'll find plenty of bugs while writing it.
+
+Once PHP is parsing happily, and I've got a reasonable phpfmt tool out of it, then I'll play with
+similar languages, such as javascript.  I may then look at other expansions/uses for it.  We'll see.
 
 # Future thoughts:
 
