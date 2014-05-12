@@ -99,6 +99,9 @@ class TestNumber(PCTestCase):
 
 class TestOperator(PCTestCase):
     def testGood(self):
+        self.assertReadsFully(OPERATOR, '===')
+        self.assertReadsFully(OPERATOR, '==')
+        self.assertReadsFully(OPERATOR, '=')
         # TODO
         pass
     def testBad(self):
@@ -213,7 +216,6 @@ class TestFuncApp(PCTestCase):
     def testGood(self):
         text = 'blah($s)'
         a = PHPJoin(WORD,'(', Either(THING, Nothing()),')').read(text)
-        pretty_print(a)
         b = FUNC_APP.read(text)
 
         self.assertReadsFully(FUNC_APP, "blah($x)")
@@ -307,6 +309,17 @@ class TestAssignment(PCTestCase):
         # TODO
         pass
 
+class TestIf(PCTestCase):
+    def testSimple(self):
+        self.assertReadsFully(IF, "if ($x == 21) { echo 'yep.'; }")
+        self.assertReadsFully(IF, """if ($x == 21) {
+                echo 'yep.';
+                }""")
+
+    def testRecursive(self):
+        self.assertReadsFully(IF, """if ($x == 21) {
+                if ($y == 19) { echo "still good"; }
+                }""")
 
 class TestPHP_Line(PCTestCase):
     def testGood(self):
@@ -314,6 +327,7 @@ class TestPHP_Line(PCTestCase):
         self.assertReadsFully(PHP_LINE, "$x = 21;")
         self.assertReadsFully(PHP_LINE, "$x = func(21);")
         self.assertReadsFully(PHP_LINE, "$x = func(21); // comment")
+        self.assertReadsFully(PHP_LINE, "if ($x == 21) { echo 'yep.'; }")
 
     def testMuliline(self):
         self.assertReadsFully(PHP_LINE, '''$var // thing.
@@ -331,9 +345,11 @@ class TestPHP_Line(PCTestCase):
 class TestPHPEcho(PCTestCase):
 
     def testEcho(self):
-        things = []
-        #    '<?php echo "hi"; ?>']
+        things = [
+            '<?php echo "hi"; ?>',
+            '<?php $x = 21; ?>',
+            '<?php if($x == 21) { echo "hi"; } ?>',
+            ]
 
         for t in things:
-            x = PHP_BLOCK.read(t)
-            print x
+            self.assertReadsFully(PHP_BLOCK, t)

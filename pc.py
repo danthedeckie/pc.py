@@ -98,15 +98,23 @@ class Either(Parsable):
             self.options.append(Nothing())
 
     def __repr__(self):
+        texts = []
+        for i in self.options:
+            if i.__class__ == SpecificWord:
+                texts.append(i.word)
+            elif i.__class__ == SingleChar:
+                texts.append(i.letter)
+            else:
+                texts.append(i.__class__.__name__)
+
         return '<%s:(%s)>' % (self.__class__.__name__,
-                              '|'.join(i.__class__.__name__
-                                            for i in self.options))
+                              '|'.join(texts))
 
 
 
     def read(self, text, position=0):
         if (text, position) in self.current_parses:
-            raise NotHere('Recursive...')
+            raise NotHere('Recursive Either... (%s)(%i)' % (text, position))
         self.current_parses[(text, position)] = True
 
         for option in self.options:
@@ -116,7 +124,9 @@ class Either(Parsable):
                 return x
             except NotHere:
                 continue
-        raise NotHere(repr(self))
+
+        del self.current_parses[(text, position)]
+        raise NotHere("%s:%s:%i" % (repr(self), text, position))
 
     def output(self, data, clean=False):
         raise TooGeneric('This is inside an Either!  It should have given '
@@ -201,7 +211,8 @@ class Joined(Parsable):
 
     def __repr__(self):
         return '<%s:(%s)>' % (self.__class__.__name__,
-                              '|'.join(repr(i).__class__.__name__ for i in self.parts))
+                              '|'.join(repr(i).__class__.__name__
+                                for i in self.parts))
 
 
     def read(self, text, position=0):
@@ -246,24 +257,21 @@ class Multiple(Joined):
         while True:
             try:
                 part_length, part_data = self.original.read(text, position + i)
-                # don't allow multiple 'Nothing' parses (as will be infinite)
-                if part_data['class'].output(part_data) == '': # nothing!
-                    if data['parts'] and data['parts'][-1].get('text', '?') == '':
-                        raise NotHere
+                if part_length == 0:
+                    # should we add the last Nothing item??
+                    break
                 data['parts'].append(part_data)
                 i += part_length
             except NotHere:
-                if not data['parts'] and not self.allow_none:
-                    raise
-                else:
-                    del self.current_parses[(text, position)]
-                    return i, data
+                break
             except IndexError:
-                if not data['parts'] and not self.allow_none:
-                    raise
-                else:
-                    del self.current_parses[(text, position)]
-                    return i, data
+                break
+
+        if not data['parts'] and not self.allow_none:
+            raise
+        else:
+            del self.current_parses[(text, position)]
+            return i, data
 
 class Until(Parsable):
     ''' accept any text, up until a certain 'end' marker '''

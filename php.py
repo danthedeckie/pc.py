@@ -1,6 +1,43 @@
+'''
+    php.py - Copyright (C) 2014 Daniel Fairhead
+    ----------------------------------------------------------------------
+    This is the (WIP) grammar for a PHP parser/cleaner, written using pc.py,
+    to prove (as much as anything) that the model works as a way of writing
+    this library.
+
+    Ultimately, I hope it can become a "phpfmt"/uncrustify type of program.
+    ----------------------------------------------------------------------
+    GPL3 Licenced.
+
+    pc.py is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    py.py is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with pc.py.  If not, see <http://www.gnu.org/licenses/>.
+
+'''
+
 from pc import *
 
-# Simple 'parts'. String literals, variables, etc.
+
+# TODO: for, while, etc. function blocks, classes.
+# TODO: ternary operators
+# TODO: Once this all works, just as a general parser, then make custom class
+#       versions of all the parts we need, with passing of data (such as
+#       expected indent) through, and 'output' versions which actually do
+#       pretty printing, etc.
+
+################################################################################
+#
+# Simple Literals, variables, etc:
+#
 
 VAR = Joined('$', Word(LETTERS + '_'))
 
@@ -11,9 +48,11 @@ CONST = WORD # TODO: really????????
 STRING = Joined('"', Until('"', escape='\\')) \
        | Joined("'", Until("'", escape='\\'))
 
-NUMBER = Joined(Optional(SingleChar('-')), Word(NUMBERS), Optional(Joined('.', Word(NUMBERS))))
+NUMBER = Joined(Optional(SingleChar('-')),
+                Word(NUMBERS),
+                Optional(Joined('.', Word(NUMBERS))))
 
-OPERATOR = Either('+', '-', '/', '=', '.')
+OPERATOR = Either('===', '!==', '!=', '==', '+', '-', '/', '=', '.')
 
 COMMENT_INLINE = Joined("/*", Until("*/", fail_on_eof=True))
 COMMENT_LINE = Joined("//", Until("\n"))
@@ -27,6 +66,12 @@ SEMICOLON = SingleChar(';')
 
 COMMENTS_OR_WHITESPACE = Multiple(Either(WHITESPACE, COMMENT))
 
+################################################################################
+#
+# Two 'helpers' which let us join things together with COMMENTS_OR_WHITESPACE
+# optionally between every single item.
+#
+
 def phpitem(actual):
     ''' most php 'things' can be separated by (x) random amount of whitespace,
         or comments.  that's just the way it is... '''
@@ -37,6 +82,12 @@ class PHPJoin(Joined):
     ''' wrap a list of otherwise sensible parsers in PHPItem(s). '''
     def __init__(self, *parts):
         self.parts = [phpitem(part) for part in parts]
+
+################################################################################
+#
+# "Things" - Any kind of PHP item, usually joined with random amounts of
+#            whitespace, with optional comments, etc.
+#
 
 THING = Either(CONST, STRING, NUMBER)
 
@@ -49,7 +100,9 @@ COMPLEX_VAR = Joined(BRACKETED_VAR, Multiple(Joined('->', BRACKETED_VAR | WORD))
 
 FUNC_APP = PHPJoin(WORD,
                    '(',
-                   Either(PHPJoin(THING, Multiple(PHPJoin(',', THING))), Nothing()),
+                   Either(PHPJoin(THING,
+                                  Multiple(PHPJoin(',', THING))),
+                          Nothing()),
                    ')')
 
 EXPR = PHPJoin('(', THING, ')')
@@ -57,9 +110,8 @@ EXPR = PHPJoin('(', THING, ')')
 # infix operations slightly different - they can't contain themselves, or else
 # it becomes too recursive...
 
-INFIXED = PHPJoin(Either(FUNC_APP, COMPLEX_VAR, EXPR, CONST, STRING, NUMBER), OPERATOR, THING)
-
-
+INFIXED = PHPJoin(Either(FUNC_APP, COMPLEX_VAR, EXPR, CONST, STRING, NUMBER),
+                  OPERATOR, THING)
 
 # And add those into "THING" - before the 'simpler' options, as foo() needs to
 # be attempted before foo with no brackets, $a++ before $a, etc.
@@ -77,7 +129,7 @@ STATEMENT = Joined(PHPJoin(STATEMENT_KEYWORDS, THING), SEMICOLON)
 ASSIGNMENT = Joined(PHPJoin(COMPLEX_VAR, OPERATOR, THING), SEMICOLON)
 
 # Again with the freaking recursive definitions!
-PHP_LINE = Either(STATEMENT, ASSIGNMENT, Nothing())
+PHP_LINE = Either(STATEMENT, ASSIGNMENT)
 
 BLOCK = PHPJoin('{', Multiple(PHP_LINE), '}')
 
@@ -88,14 +140,12 @@ IF = PHPJoin('if',
                  Either('else if', 'elseif'), EXPR, BLOCK | STATEMENT)),
              Multiple(Joined('else', BLOCK | STATEMENT)))
 
-# TODO: for, while, etc. function blocks, classes.
-
-PHP_LINE.options += (IF,)
+PHP_LINE.options += (IF, Nothing())
 PHP_LINE = Joined(PHP_LINE, COMMENTS_OR_WHITESPACE)
 
-PHP_BLOCK = Joined('<?php', Multiple(PHP_LINE), '?>')
+################################################################################
+#
+# And Parse PHP files, from <?php ... to the end.
 
-# TODO: Once this all works, just as a general parser, then make custom class
-#       versions of all the parts we need, with passing of data (such as
-#       expected indent) through, and 'output' versions which actually do
-#       pretty printing, etc.
+PHP_BLOCK = Joined('<?php', Multiple(PHP_LINE), '?>')
+# TODO: files which end w/o closing ?>
