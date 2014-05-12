@@ -19,9 +19,9 @@ class PCTestCase(TestCase):
     def assertHasRead(self, parsed, expected_length):
         self.assertEquals(parsed[0], expected_length)
 
-    def assertTexts(self, parsed, texts):
-        for a, b in zip(parsed[1]['parts'], texts):
-            self.assertEquals(a['text'], b)
+    def assertTexts(self, parsed, expected):
+        for a, b in zip(expected, parts(parsed[1])):
+            self.assertEquals(a, b)
 
     def assertOutputs(self, parsed, text):
         self.assertEquals(output(parsed), text)
@@ -560,35 +560,6 @@ class TestUntil(PCTestCase):
         with self.assertRaises(NotHere):
             p = Until(' ', fail_on_eof=True).read(text)
 
-    def testWordEnding(self):
-        text = "START do stuff. END"
-
-        # text ends with ending.
-
-        P = Until('END')
-        p = P.read(text)
-        self.assertHasRead(p, 19)
-        self.assertOutputs(p, text)
-
-        # text continues past ending
-
-        text1 = "START do stuff. END and some extra crap. END AGAIN"
-        p = P.read(text1)
-        self.assertHasRead(p, 19)
-        self.assertOutputs(p, text)
-
-        # text doesn't have ending
-
-        text2 = "START do stuff. "
-        p = P.read(text2)
-        self.assertHasRead(p, 16)
-        self.assertOutputs(p, text2)
-
-        # no ending, please fail:
-
-        with self.assertRaises(NotHere):
-            p = Until('END', fail_on_eof=True).read(text2)
-
 class TestMultiple(PCTestCase):
     def testMultiLetters(self):
         P = Multiple(SingleChar('a'))
@@ -814,7 +785,7 @@ Multiple:
 
         self.assertEquals(text, expected)
 
-class testParts(TestCase):
+class testParts(PCTestCase):
     def testBasic(self):
 
         CAT = SpecificWord('cat')
@@ -834,3 +805,5 @@ class testParts(TestCase):
         expected = ['the', ' ', 'cat', ' ', 'said', '  ', 'hello']
 
         self.assertEquals([a for a in parts(s[1])], expected)
+
+        self.assertTexts(s, expected)
