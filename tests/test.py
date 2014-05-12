@@ -57,7 +57,7 @@ class TestSingleA(PCTestCase):
 
         self.assertHasRead(a, 0)
 
-    def testMulitpleSingleChar(self):
+    def testMultipleSingleChar(self):
 
         text = 'a'
 
@@ -132,7 +132,7 @@ class TestSpecificWord(PCTestCase):
             t = T.read('')
 
 
-    def testMulitpleSpecificWords(self):
+    def testMultipleSpecificWords(self):
 
         #mulitple, but only 1 to read:
         text = 'tomato'
@@ -145,7 +145,7 @@ class TestSpecificWord(PCTestCase):
         self.assertHasRead(ts, 6)
         self.assertOutputs(ts, text)
 
-        # Mulitple with 8 to read:
+        # Multiple with 8 to read:
 
         text = text * 8
 
@@ -154,7 +154,7 @@ class TestSpecificWord(PCTestCase):
         self.assertHasRead(ts, 48)
         self.assertOutputs(ts, text)
 
-        # Mulitple with junk following:
+        # Multiple with junk following:
 
         ts = Ts.read('tomatoPuree')
 
@@ -521,7 +521,7 @@ class TestUntil(PCTestCase):
 
         with self.assertRaises(NotHere):
             p = Until('END', fail_on_eof=True).read(text2)
-            
+
     def testSingleLetterWithEscape(self):
         P = Until('"', escape='\\')
 
@@ -547,7 +547,6 @@ class TestUntil(PCTestCase):
 
         with self.assertRaises(NotHere):
             p = Until(' ', fail_on_eof=True).read(text)
-
 
     def testWordEnding(self):
         text = "START do stuff. END"
@@ -578,11 +577,22 @@ class TestUntil(PCTestCase):
         with self.assertRaises(NotHere):
             p = Until('END', fail_on_eof=True).read(text2)
 
-
 class TestMultiple(PCTestCase):
-    def testMulitLetters(self):
-        # TODO
-        pass
+    def testMultiLetters(self):
+        P = Multiple(SingleChar('a'))
+
+        self.assertReadsFully(P,'')
+        self.assertReadsFully(P,'a')
+        self.assertReadsFully(P,'aaaaaaaaaa')
+
+        P = Multiple(Either('a','b','c'))
+
+        self.assertReadsFully(P,'')
+        self.assertReadsFully(P,'a')
+        self.assertReadsFully(P,'b')
+        self.assertReadsFully(P,'c')
+        self.assertReadsFully(P,'abc')
+        self.assertReadsFully(P,'abcbbaaaaccabaccabbaaaa')
 
     def testMultiEithers(self):
         E = Either(SpecificWord('the'), SpecificWord('cat'))
@@ -647,9 +657,74 @@ class TestMultiple(PCTestCase):
         with self.assertRaises(NotHere):
             pf = PF.read(text)
 
-    def testMulitpleOptionals(self):
-        # TODO
-        pass
+    def testRecursiveMultiple(self):
+        E = Either('a','b')
+        M = Multiple(E)
+        E.options += (M,)
+
+        self.assertReadsFully(M,'')
+        self.assertReadsFully(M,'a')
+        self.assertReadsFully(M,'abaabbabaab')
+
+        # and now with options AFTER the Mulitple (test continues after attempt)
+
+        E.options += (SingleChar('c'),)
+
+        self.assertReadsFully(M,'')
+        self.assertReadsFully(M,'a')
+        self.assertReadsFully(M,'c')
+        self.assertReadsFully(M,'abcaacbbabcccccaab')
+
+
+
+class TestReprs(TestCase):
+    ''' these tests are internal to the library, and shouldn't be relied
+        upon to not change between versions. '''
+
+    def testParsableRepr(self):
+        P = Parsable()
+        self.assertEquals(repr(P), '<Parsable>')
+
+    def testJoinedRepr(self):
+        J = Joined()
+        self.assertEquals(repr(J), '<Joined:()>')
+
+        J = Joined(Nothing())
+        self.assertEquals(repr(J), '<Joined:(Nothing)>')
+
+        J = Joined(SpecificWord('test'))
+        self.assertEquals(repr(J), '<Joined:("test")>')
+
+        J = Joined(SingleChar('t'))
+        self.assertEquals(repr(J), "<Joined:('t')>")
+
+        J = Joined(SingleChar('t'), SpecificWord('est'))
+        self.assertEquals(repr(J), '<Joined:(\'t\'+"est")>')
+
+        J = Joined(SingleChar('t'), SpecificWord('est'), Nothing())
+        self.assertEquals(repr(J), '<Joined:(\'t\'+"est"+Nothing)>')
+
+    def testEitherRepr(self):
+        J = Either()
+        self.assertEquals(repr(J), '<Either:()>')
+
+        J = Either(Nothing())
+        self.assertEquals(repr(J), '<Either:(Nothing)>')
+
+        J = Either(SpecificWord('test'))
+        self.assertEquals(repr(J), '<Either:("test")>')
+
+        J = Either(SingleChar('t'))
+        self.assertEquals(repr(J), "<Either:('t')>")
+
+        J = Either(SingleChar('t'), SpecificWord('est'))
+        self.assertEquals(repr(J), '<Either:(\'t\'|"est")>')
+
+        J = Either(SingleChar('t'), SpecificWord('est'), Nothing())
+        self.assertEquals(repr(J), '<Either:(\'t\'|"est"|Nothing)>')
+
+
+
 
 class TestShouldNotBeReachable(TestCase):
     ''' these tests should never actually be reachable in normal code.
@@ -668,6 +743,3 @@ class TestShouldNotBeReachable(TestCase):
         with self.assertRaises(TooGeneric):
             P.output({'class': P })
 
-    def testParsableRepr(self):
-        P = Parsable()
-        self.assertEquals(repr(P), '<Parsable>')

@@ -101,9 +101,9 @@ class Either(Parsable):
         texts = []
         for i in self.options:
             if i.__class__ == SpecificWord:
-                texts.append(i.word)
+                texts.append('"' + i.word + '"')
             elif i.__class__ == SingleChar:
-                texts.append(i.letter)
+                texts.append("'" + i.letter + "'")
             else:
                 texts.append(i.__class__.__name__)
 
@@ -169,7 +169,8 @@ class SpecificWord(Parsable):
             return self.length, self.data
         else:
             raise NotHere('Expected "%s", instead found: "%s"'
-                          % (self.word, text[position:position + len(self.word)]) )
+                          % (self.word,
+                             text[position:position + len(self.word)]))
 
 
 class Word(Parsable):
@@ -210,9 +211,17 @@ class Joined(Parsable):
                 self.parts.append(p)
 
     def __repr__(self):
+        texts = []
+        for i in self.parts:
+            if i.__class__ == SpecificWord:
+                texts.append('"' + i.word + '"')
+            elif i.__class__ == SingleChar:
+                texts.append("'" + i.letter + "'")
+            else:
+                texts.append(i.__class__.__name__)
+
         return '<%s:(%s)>' % (self.__class__.__name__,
-                              '|'.join(repr(i).__class__.__name__
-                                for i in self.parts))
+                              '+'.join(texts))
 
 
     def read(self, text, position=0):
