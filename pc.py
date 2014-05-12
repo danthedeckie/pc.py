@@ -144,6 +144,9 @@ class Nothing(Parsable):
     def __init__(self):
         self.data = {'class': self, 'text': ''}
 
+    def __repr__(self):
+        return '<Nothing>'
+
     def read(self, text, position=0):
         return 0, self.data
 
@@ -253,20 +256,16 @@ class Multiple(Joined):
 
         self.original = original
         self.allow_none = allow_none
-        self.current_parses = {}
 
     def __repr__(self):
         try:
             return '<%s:(%s)>' % (self.__class__.__name__,
-                                  repr(self.original.__class__.__name__))
+                                  repr(self.original))
         except RuntimeError:
             return self.__class__.__name__
 
 
     def read(self, text, position=0):
-        #if (text, position) in self.current_parses:
-        #    raise NotHere('Recursive...')
-        #self.current_parses[(text, position)] = True
 
         data = {'class': self, 'parts': []}
         i = 0
@@ -274,19 +273,16 @@ class Multiple(Joined):
             try:
                 part_length, part_data = self.original.read(text, position + i)
                 if part_length == 0:
-                    # should we add the last Nothing item??
+                    # should we add the last Nothing item?
                     break
                 data['parts'].append(part_data)
                 i += part_length
             except NotHere:
                 break
-            except IndexError:
-                break
 
         if data['parts'] == [] and not self.allow_none:
             raise
         else:
-            #del self.current_parses[(text, position)]
             return i, data
 
 class Until(Parsable):
@@ -302,25 +298,20 @@ class Until(Parsable):
         data = {'class': self}
         i = -1
         end = len(text) - position
-        try:
-            while i < end:
-                i += 1
-                now = position + i
-                if text[now:now + self.ending_length] == self.ending \
-                and text[now - 1] != self.escape:
-                    data['text'] = text[position:now + self.ending_length]
-                    return i + self.ending_length, data
-            if self.fail_on_eof:
-                raise NotHere('EOF')
-            else:
-                data['text'] = text[position:now + self.ending_length]
-                return i, data
-        except IndexError:
-            return NotHere('EOF')
 
-#class Spaced(*vargs):
-#    ''' join mulitple parsers together, with optional spaces... '''
-#
+        while i < end:
+            i += 1
+            now = position + i
+            if text[now:now + self.ending_length] == self.ending \
+            and text[now - 1] != self.escape:
+                data['text'] = text[position:now + self.ending_length]
+                return i + self.ending_length, data
+
+        if self.fail_on_eof:
+            raise NotHere('EOF')
+        else:
+            data['text'] = text[position:now + self.ending_length]
+            return i, data
 
 #######################################################
 # Aliases, and other useful bits:

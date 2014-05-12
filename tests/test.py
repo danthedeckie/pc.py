@@ -9,6 +9,8 @@
 # pylint: disable=no-self-use, wildcard-import
 
 from unittest import TestCase
+from cStringIO import StringIO
+import sys
 
 from pc import *
 from php import PHP_BLOCK
@@ -733,6 +735,23 @@ class TestReprs(TestCase):
         J = Either(SingleChar('t'), SpecificWord('est'), Nothing())
         self.assertEquals(repr(J), '<Either:(\'t\'|"est"|Nothing)>')
 
+    def testMultipleRepr(self):
+        M = Multiple(Nothing())
+        self.assertEquals(repr(M), "<Multiple:(<Nothing>)>")
+
+        MM = Multiple(M)
+        self.assertEquals(repr(MM), "<Multiple:(<Multiple:(<Nothing>)>)>")
+
+        E = Either('yes', 'no', 'maybe')
+
+        ME = Multiple(E)
+        self.assertEquals(repr(ME),
+                          '<Multiple:(<Either:("yes"|"no"|"maybe")>)>')
+
+        # and recursive!
+        E.options += (ME,)
+        self.assertEquals(repr(ME),
+                          '<Multiple:(<Either:("yes"|"no"|"maybe"|Multiple)>)>')
 
 
 
@@ -753,3 +772,65 @@ class TestShouldNotBeReachable(TestCase):
         with self.assertRaises(TooGeneric):
             P.output({'class': P })
 
+    def testEitherOutput(self):
+        E = Either()
+        with self.assertRaises(TooGeneric):
+            E.output({'class': E, 'text': 'anything'})
+
+
+class TestPrettyPrint(TestCase):
+    def testBasic(self):
+        Ws = Either(SingleChar('a'), SpecificWord('cat'),
+                    SpecificWord('said'), Word(LETTERS))
+
+        S = Multiple(Joined(Ws, Optional(Word(' '))))
+
+        s = S.read('the cat said  hello')
+
+        stdout = sys.stdout
+        sys.stdout = StringIO()
+
+        pretty_print(s)
+
+        text = sys.stdout.getvalue()
+        sys.stdout = stdout
+
+        expected = '''19 chars parsed.
+the cat said  hello
+Multiple:
+  Joined:
+    Word:"the"
+    Word:" "
+  Joined:
+    SpecificWord:"cat"
+    Word:" "
+  Joined:
+    SpecificWord:"said"
+    Word:"  "
+  Joined:
+    Word:"hello"
+    Nothing:""
+'''
+
+        self.assertEquals(text, expected)
+
+class testParts(TestCase):
+    def testBasic(self):
+
+        CAT = SpecificWord('cat')
+        SAID = SpecificWord('said')
+        OTHERS = Word(LETTERS)
+        SPACES = Word(' ')
+
+        WORDS = Either(CAT, SAID, OTHERS)
+
+        WORDSPACE = Joined(WORDS, Optional(SPACES))
+
+        S = Multiple(WORDSPACE)
+
+        s = S.read('the cat said  hello')
+
+        self.assertEquals(s[0], 19)
+        expected = ['the', ' ', 'cat', ' ', 'said', '  ', 'hello']
+
+        self.assertEquals([a for a in parts(s[1])], expected)
