@@ -17,14 +17,14 @@ from php import *
 class TestVar(PCTestCase):
     def testGood(self):
         text = '$thing'
-        v = VAR.read(text)
+        v = VAR.parse(text)
 
         self.assertHasRead(v, 6)
         self.assertOutputs(v, text)
 
         text = '$thing_two '
 
-        v = VAR.read(text)
+        v = VAR.parse(text)
 
         self.assertHasRead(v, 10)
         self.assertOutputs(v, '$thing_two')
@@ -35,17 +35,17 @@ class TestVar(PCTestCase):
         text = '%other'
 
         with self.assertRaises(NotHere):
-            v = VAR.read(text)
+            v = VAR.parse(text)
 
         text = '$-32'
 
         with self.assertRaises(NotHere):
-            v = VAR.read(text)
+            v = VAR.parse(text)
 
         text = ''
 
         with self.assertRaises(NotHere):
-            v = VAR.read(text)
+            v = VAR.parse(text)
 
 
 class TestWord(PCTestCase):
@@ -111,13 +111,13 @@ class TestOperator(PCTestCase):
 class TestComment(PCTestCase):
     def testLineComment(self):
         text = '// thing. '
-        p = COMMENT.read(text)
+        p = COMMENT.parse(text)
         self.assertHasRead(p, 10)
         self.assertOutputs(p, text)
 
     def testInlineComment(self):
         text = '/* hidden */'
-        p = COMMENT.read(text)
+        p = COMMENT.parse(text)
         self.assertHasRead(p, 12)
         self.assertOutputs(p, text)
 
@@ -136,57 +136,57 @@ class TestWhiteSpace(PCTestCase):
 class TestCommentsOrWhiteSpace(PCTestCase):
     def testSingleSpace(self):
         text = ' '
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, 1)
         self.assertOutputs(p, text)
 
     def testMultipleSpaces(self):
         text = '   '
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, 3)
         self.assertOutputs(p, text)
 
     def testMultipleTypesOfSpaces(self):
         text = '  \t '
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, 4)
         self.assertOutputs(p, text)
 
         text = '  \t\n\n  '
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, 7)
         self.assertOutputs(p, text)
 
     def testComment(self):
         text = '// thing. '
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, 10)
         self.assertOutputs(p, text)
 
     def testNone(self):
         text = 'other stuff'
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, 0)
         self.assertOutputs(p, '')
 
     def testSpaceComment(self):
         text = ' // space, then comment!'
 
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, len(text))
         self.assertOutputs(p, text)
 
     def testSpaceInlineCommentSpace(self):
         text = ' /* inline comment */ '
 
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, len(text))
         self.assertOutputs(p, text)
 
     def testMixture(self):
         text = '\n /* inline comment */\n /* more\n things */ \n // stuff\n  '
 
-        p = COMMENTS_OR_WHITESPACE.read(text)
+        p = COMMENTS_OR_WHITESPACE.parse(text)
         self.assertHasRead(p, len(text))
         self.assertOutputs(p, text)
 
@@ -215,8 +215,8 @@ class TestThing(PCTestCase):
 class TestFuncApp(PCTestCase):
     def testGood(self):
         text = 'blah($s)'
-        a = PHPJoin(WORD,'(', Either(THING, Nothing()),')').read(text)
-        b = FUNC_APP.read(text)
+        a = PHPJoin(WORD,'(', Either(THING, Nothing()),')').parse(text)
+        b = FUNC_APP.parse(text)
 
         self.assertReadsFully(FUNC_APP, "blah($x)")
         self.assertReadsFully(FUNC_APP, "blah ($x)")
@@ -271,7 +271,7 @@ class TestExpr(PCTestCase):
 class TestStatement(PCTestCase):
     def testGood(self):
         text = 'echo "hi!";'
-        P = STATEMENT.read(text)
+        P = STATEMENT.parse(text)
         # TODO
         pass
     def testBad(self):

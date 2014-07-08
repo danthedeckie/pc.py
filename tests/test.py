@@ -23,11 +23,12 @@ class PCTestCase(TestCase):
         for a, b in zip(expected, parts(parsed[1])):
             self.assertEquals(a, b)
 
-    def assertOutputs(self, parsed, text):
+    def assertOutputs(self, parsed_block, text):
+        count, parsed = parsed_block
         self.assertEquals(output(parsed), text)
 
     def assertReadsFully(self, parser, text):
-        p = parser.read(text)
+        p = parser.parse(text)
         self.assertOutputs(p, text)
         self.assertHasRead(p, len(text))
 
@@ -36,7 +37,7 @@ class TestNothing(PCTestCase):
         text = ''
         N = Nothing()
 
-        n = N.read(text)
+        n = N.parse(text)
 
         self.assertHasRead(n, 0)
         self.assertOutputs(n, '')
@@ -49,13 +50,13 @@ class TestSingleA(PCTestCase):
         A = SingleChar('a')
         A_ = Either(SingleChar('a'), Nothing())
 
-        self.assertHasRead(A.read(text), 1)
-        self.assertOutputs(A.read(text), text)
+        self.assertHasRead(A.parse(text), 1)
+        self.assertOutputs(A.parse(text), text)
 
         with self.assertRaises(NotHere):
-            A.read(' ')
+            A.parse(' ')
 
-        a = A_.read(' ')
+        a = A_.parse(' ')
 
         self.assertHasRead(a, 0)
 
@@ -66,10 +67,10 @@ class TestSingleA(PCTestCase):
         A = Multiple(SingleChar('a'))
         A_ = Multiple(Either(SingleChar('a'), Nothing()))
 
-        a = A.read(text+text)
+        a = A.parse(text+text)
         self.assertHasRead(a, 2)
 
-        a = A.read(text * 4)
+        a = A.parse(text * 4)
         self.assertHasRead(a, 4)
 
     def testAthenB(self):
@@ -82,34 +83,34 @@ class TestSingleA(PCTestCase):
         B = Multiple(SingleChar('b'))
         B_ = Multiple(Either(SingleChar('b'), Nothing()))
 
-        ab = Joined(A, B).read(text)
+        ab = Joined(A, B).parse(text)
 
         self.assertHasRead(ab, 2)
         self.assertOutputs(ab, text)
 
-        ab = Joined(A_, B).read(text)
+        ab = Joined(A_, B).parse(text)
 
         self.assertHasRead(ab, 2)
         self.assertOutputs(ab, text)
 
-        ab = Joined(A_, B_).read(text)
+        ab = Joined(A_, B_).parse(text)
 
         self.assertHasRead(ab, 2)
         self.assertOutputs(ab, text)
 
         text = 'abc'
 
-        ab = Joined(A, B).read(text)
+        ab = Joined(A, B).parse(text)
 
         self.assertHasRead(ab, 2)
         self.assertOutputs(ab, 'ab')
 
-        ab = Joined(A_, B).read(text)
+        ab = Joined(A_, B).parse(text)
 
         self.assertHasRead(ab, 2)
         self.assertOutputs(ab, 'ab')
 
-        ab = Joined(A_, B_).read(text)
+        ab = Joined(A_, B_).parse(text)
 
         self.assertHasRead(ab, 2)
         self.assertOutputs(ab, 'ab')
@@ -124,14 +125,14 @@ class TestSpecificWord(PCTestCase):
 
         T = SpecificWord('tomato')
 
-        t = T.read(text)
+        t = T.parse(text)
 
         self.assertHasRead(t, 6)
         self.assertOutputs(t, text)
 
         # when 0 are there:
         with self.assertRaises(NotHere):
-            t = T.read('')
+            t = T.parse('')
 
 
     def testMultipleSpecificWords(self):
@@ -142,7 +143,7 @@ class TestSpecificWord(PCTestCase):
         T = SpecificWord('tomato')
         Ts = Multiple(T)
 
-        ts = Ts.read(text)
+        ts = Ts.parse(text)
 
         self.assertHasRead(ts, 6)
         self.assertOutputs(ts, text)
@@ -151,27 +152,27 @@ class TestSpecificWord(PCTestCase):
 
         text = text * 8
 
-        ts = Ts.read(text)
+        ts = Ts.parse(text)
 
         self.assertHasRead(ts, 48)
         self.assertOutputs(ts, text)
 
         # Multiple with junk following:
 
-        ts = Ts.read('tomatoPuree')
+        ts = Ts.parse('tomatoPuree')
 
         self.assertHasRead(ts, 6)
         self.assertOutputs(ts, 'tomato')
 
         # None:
 
-        ts = Ts.read('')
+        ts = Ts.parse('')
         self.assertHasRead(ts, 0)
         self.assertOutputs(ts, '')
 
         # Only Junk:
 
-        ts = Ts.read('sauce made from tomato')
+        ts = Ts.parse('sauce made from tomato')
         self.assertHasRead(ts, 0)
         self.assertOutputs(ts, '')
 
@@ -183,14 +184,14 @@ class TestWord(PCTestCase):
         text = 'abc'
         A = Word('abc')
 
-        a = A.read(text)
+        a = A.parse(text)
 
         self.assertHasRead(a, 3)
         self.assertOutputs(a, 'abc')
 
         # junk following:
 
-        a = A.read('bcd')
+        a = A.parse('bcd')
 
         self.assertHasRead(a, 2)
         self.assertOutputs(a, 'bc')
@@ -198,12 +199,12 @@ class TestWord(PCTestCase):
         # only junk:
 
         with self.assertRaises(NotHere):
-            a = A.read('xyz')
+            a = A.parse('xyz')
 
         # nothing:
 
         with self.assertRaises(NotHere):
-            a = A.read('')
+            a = A.parse('')
 
     def testJoined(self):
 
@@ -211,7 +212,7 @@ class TestWord(PCTestCase):
         text = '$variable'
         A = Joined('$', Word(LETTERS))
 
-        a = A.read(text)
+        a = A.parse(text)
 
         self.assertHasRead(a, 9)
         self.assertOutputs(a, text)
@@ -220,7 +221,7 @@ class TestWord(PCTestCase):
 
         text = '$var again'
 
-        a = A.read(text)
+        a = A.parse(text)
 
         self.assertHasRead(a, 4)
         self.assertOutputs(a, '$var')
@@ -228,14 +229,14 @@ class TestWord(PCTestCase):
 
         A_ = Joined(A, Word(' '))
 
-        a = A_.read(text)
+        a = A_.parse(text)
 
         self.assertHasRead(a, 5)
         self.assertOutputs(a, '$var ')
 
         A__ = Joined(A_, Word(LETTERS))
 
-        a = A__.read(text)
+        a = A__.parse(text)
 
         self.assertHasRead(a, 10)
         self.assertOutputs(a, text)
@@ -255,7 +256,7 @@ class TestEither(PCTestCase):
 
         text = 'abc'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'a')
@@ -264,7 +265,7 @@ class TestEither(PCTestCase):
 
         text = 'bcd'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'b')
@@ -274,7 +275,7 @@ class TestEither(PCTestCase):
         text = 'def'
 
         with self.assertRaises(NotHere):
-            p = E.read(text)
+            p = E.parse(text)
 
     def testManySingleLetters(self):
 
@@ -288,7 +289,7 @@ class TestEither(PCTestCase):
 
         text = 'abc'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'a')
@@ -297,7 +298,7 @@ class TestEither(PCTestCase):
 
         text = 'bcd'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'b')
@@ -306,7 +307,7 @@ class TestEither(PCTestCase):
 
         text = 'cde'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'c')
@@ -316,7 +317,7 @@ class TestEither(PCTestCase):
         text = 'def'
 
         with self.assertRaises(NotHere):
-            p = E.read(text)
+            p = E.parse(text)
 
     def testTwoSingleLettersORsyntax(self):
 
@@ -331,7 +332,7 @@ class TestEither(PCTestCase):
 
         text = 'abc'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'a')
@@ -340,7 +341,7 @@ class TestEither(PCTestCase):
 
         text = 'bcd'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'b')
@@ -350,7 +351,7 @@ class TestEither(PCTestCase):
         text = 'def'
 
         with self.assertRaises(NotHere):
-            p = E.read(text)
+            p = E.parse(text)
 
     def testManySingleLettersORsyntax(self):
 
@@ -364,7 +365,7 @@ class TestEither(PCTestCase):
 
         text = 'abc'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'a')
@@ -373,7 +374,7 @@ class TestEither(PCTestCase):
 
         text = 'bcd'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'b')
@@ -382,7 +383,7 @@ class TestEither(PCTestCase):
 
         text = 'cde'
 
-        p = E.read(text)
+        p = E.parse(text)
 
         self.assertHasRead(p, 1)
         self.assertOutputs(p, 'c')
@@ -392,7 +393,7 @@ class TestEither(PCTestCase):
         text = 'def'
 
         with self.assertRaises(NotHere):
-            p = E.read(text)
+            p = E.parse(text)
 
 
     def testWords(self):
@@ -412,7 +413,7 @@ class TestEither(PCTestCase):
         EE = Either(E, ' ')
 
         with self.assertRaises(NotHere):
-            E.read(' ')
+            E.parse(' ')
 
         self.assertReadsFully(EE, ' ')
         self.assertReadsFully(EE, 'a')
@@ -432,7 +433,7 @@ class TestEither(PCTestCase):
         # But reading an unknown char fails:
 
         with self.assertRaises(NotHere):
-            EE.read('c')
+            EE.parse('c')
 
         # add a new option AFTER the recursive EE
 
@@ -449,14 +450,14 @@ class TestEither(PCTestCase):
 
         text = 'chocolate!'
 
-        e = E.read(text)
+        e = E.parse(text)
 
         self.assertHasRead(e, 9)
         self.assertOutputs(e, 'chocolate')
 
         text = 'other sweets'
 
-        e = E.read(text)
+        e = E.parse(text)
 
         self.assertHasRead(e, 0)
         self.assertOutputs(e, '')
@@ -481,28 +482,28 @@ class TestUntil(PCTestCase):
         # ends with ending:
 
         text = 'thing '
-        p = P.read(text)
+        p = P.parse(text)
         self.assertHasRead(p, 6)
         self.assertOutputs(p, 'thing ')
 
         # continues afterwards:
 
         text = 'thing another'
-        p = P.read(text)
+        p = P.parse(text)
         self.assertHasRead(p, 6)
         self.assertOutputs(p, 'thing ')
 
         # no ending:
 
         text = 'thisisalongtext'
-        p = P.read(text)
+        p = P.parse(text)
         self.assertHasRead(p, 15)
         self.assertOutputs(p, text)
 
         # no ending, please fail:
 
         with self.assertRaises(NotHere):
-            p = Until(' ', fail_on_eof=True).read(text)
+            p = Until(' ', fail_on_eof=True).parse(text)
 
 
     def testWordEnding(self):
@@ -511,28 +512,28 @@ class TestUntil(PCTestCase):
         # text ends with ending.
 
         P = Until('END')
-        p = P.read(text)
+        p = P.parse(text)
         self.assertHasRead(p, 19)
         self.assertOutputs(p, text)
 
         # text continues past ending
 
         text1 = "START do stuff. END and some extra crap. END AGAIN"
-        p = P.read(text1)
+        p = P.parse(text1)
         self.assertHasRead(p, 19)
         self.assertOutputs(p, text)
 
         # text doesn't have ending
 
         text2 = "START do stuff. "
-        p = P.read(text2)
+        p = P.parse(text2)
         self.assertHasRead(p, 16)
         self.assertOutputs(p, text2)
 
         # no ending, please fail:
 
         with self.assertRaises(NotHere):
-            p = Until('END', fail_on_eof=True).read(text2)
+            p = Until('END', fail_on_eof=True).parse(text2)
 
     def testSingleLetterWithEscape(self):
         P = Until('"', escape='\\')
@@ -544,21 +545,21 @@ class TestUntil(PCTestCase):
         # continues afterwards:
 
         text = 'thing" another'
-        p = P.read(text)
+        p = P.parse(text)
         self.assertHasRead(p, 6)
         self.assertOutputs(p, 'thing"')
 
         # no ending:
 
         text = 'thisisalongtext'
-        p = P.read(text)
+        p = P.parse(text)
         self.assertHasRead(p, 15)
         self.assertOutputs(p, text)
 
         # no ending, please fail:
 
         with self.assertRaises(NotHere):
-            p = Until(' ', fail_on_eof=True).read(text)
+            p = Until(' ', fail_on_eof=True).parse(text)
 
 class TestMultiple(PCTestCase):
     def testMultiLetters(self):
@@ -583,14 +584,14 @@ class TestMultiple(PCTestCase):
 
         text = 'the cat sat on the mat'
 
-        s = S.read(text)
+        s = S.parse(text)
 
         self.assertHasRead(s, 8)
         self.assertOutputs(s, 'the cat ')
 
         text = 'the the the cat, yo. remix!'
 
-        s = S.read(text)
+        s = S.parse(text)
 
         self.assertHasRead(s, 15)
         self.assertOutputs(s, 'the the the cat')
@@ -603,7 +604,7 @@ class TestMultiple(PCTestCase):
 
         text = 'chocolate!'
 
-        e = E.read(text)
+        e = E.parse(text)
 
         self.assertHasRead(e, 9)
         self.assertOutputs(e, 'chocolate')
@@ -612,7 +613,7 @@ class TestMultiple(PCTestCase):
 
         M = Multiple(E)
 
-        m = E.read(text)
+        m = E.parse(text)
 
         self.assertHasRead(m, 9)
         self.assertOutputs(m, 'chocolate')
@@ -621,7 +622,7 @@ class TestMultiple(PCTestCase):
 
         ME = Multiple(Either(Either('?', Nothing()), E))
 
-        me = ME.read(text)
+        me = ME.parse(text)
 
         self.assertHasRead(me, 9)
         self.assertOutputs(me, 'chocolate')
@@ -631,14 +632,14 @@ class TestMultiple(PCTestCase):
 
         P = Multiple(Either('a', 'b', 'c'))
 
-        p = P.read(text)
+        count, p = P.parse(text)
 
         self.assertEquals(output(p), '')
 
         PF = Multiple(Either('a', 'b', 'c'), allow_none=False)
 
         with self.assertRaises(NotHere):
-            pf = PF.read(text)
+            pf = PF.parse(text)
 
     def testRecursiveMultiple(self):
         E = Either('a', 'b')
@@ -734,7 +735,7 @@ class TestShouldNotBeReachable(TestCase):
     def testParsableRead(self):
         P = Parsable()
         with self.assertRaises(TooGeneric):
-            P.read('text')
+            P.parse('text')
 
     def testParsableOutput(self):
         P = Parsable()
@@ -756,7 +757,7 @@ class TestPrettyPrint(TestCase):
 
         S = Multiple(Joined(Ws, Optional(Word(' '))))
 
-        s = S.read('the cat said  hello')
+        s = S.parse('the cat said  hello')
 
         stdout = sys.stdout
         sys.stdout = StringIO()
@@ -785,6 +786,49 @@ Multiple:
 
         self.assertEquals(text, expected)
 
+class testNamedJoin(PCTestCase):
+    def testBasic(self):
+        A = SpecificWord('A')
+        B = SpecificWord('B')
+
+        AB = NamedJoin(('a', A),
+                       ('b', B))
+
+        length, data = AB.parse('AB')
+
+        assert length == 2
+
+        assert 'a' in data['parts']
+        assert 'b' in data['parts']
+
+        self.assertEquals(data['parts']['a']['text'], 'A')
+        self.assertEquals(data['parts']['b']['text'], 'B')
+
+    def testSimpleEnglishSentences(self):
+        WS = Word(SPACES)
+        WORD = Word(LETTERS)
+
+        ARTICLES = Either(SpecificWord('the'), SpecificWord('a'), SpecificWord('an'))
+
+        VERBS = Either(SpecificWord('have'), SpecificWord('go to'), SpecificWord('eat'))
+
+        SENTENCE = NamedJoin(
+            ('subject', Joined(Optional(Joined(ARTICLES, WS)), WORD)),
+            ('sub_sp', WS),
+            ('verb', VERBS),
+            ('verb_sp', WS),
+            ('object', Joined(Optional(Joined(ARTICLES, WS)), WORD)),
+            ('punctuation', Word('.?!'))
+            )
+
+        length, munchies = SENTENCE.parse('the cats have  dinner.')
+
+        assert(length == 22)
+        assert(output(munchies['parts']['subject']) == 'the cats')
+        assert(output(munchies['parts']['verb']) == 'have')
+        assert(output(munchies['parts']['object']) == 'dinner')
+
+
 class testParts(PCTestCase):
     def testBasic(self):
 
@@ -799,7 +843,7 @@ class testParts(PCTestCase):
 
         S = Multiple(WORDSPACE)
 
-        s = S.read('the cat said  hello')
+        s = S.parse('the cat said  hello')
 
         self.assertEquals(s[0], 19)
         expected = ['the', ' ', 'cat', ' ', 'said', '  ', 'hello']

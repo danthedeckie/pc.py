@@ -50,8 +50,8 @@ class Parsable(object):
         except:
             return '<%s>' % self.__class__.__name__
 
-    def read(self, text, position=0):  #pylint: disable=unused-argument
-        ''' read instance from text, starting at position.
+    def parse(self, text, position=0):  #pylint: disable=unused-argument
+        ''' parse instance from text, starting at position.
             return either the length that we parsed, or raise a 'NotHere'
             exception if it's not possible to parse one of these here. '''
         raise TooGeneric('Parsable!')
@@ -112,7 +112,7 @@ class Either(Parsable):
 
 
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
         if (text, position) in self.current_parses:
             raise NotHere('Recursive Either... (%s)(%i)' % (text, position))
         self.current_parses[(text, position)] = True
@@ -123,7 +123,7 @@ class Either(Parsable):
 
         for option in self.options:
             try:
-                result = option.read(text, position)
+                result = option.parse(text, position)
                 if result[0]:
                     break
             except NotHere:
@@ -140,14 +140,14 @@ class Either(Parsable):
                          'a more specific reply!')
 
 class Nothing(Parsable):
-    ''' a 'NULL' parser, which reads nothing, and returns nothing. '''
+    ''' a 'NULL' parser, which parses nothing, and returns nothing. '''
     def __init__(self):
         self.data = {'class': self, 'text': ''}
 
     def __repr__(self):
         return '<Nothing>'
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
         return 0, self.data
 
 class SingleChar(Parsable):
@@ -156,7 +156,7 @@ class SingleChar(Parsable):
         self.letter = letter
         self.data = {'class': self, 'text': letter}
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
         try:
             if text[position] == self.letter:
                 return 1, self.data
@@ -174,7 +174,7 @@ class SpecificWord(Parsable):
         self.data = {'class': self, 'text': word}
 
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
         if text[position:position + self.length] == self.word:
             return self.length, self.data
         else:
@@ -191,7 +191,7 @@ class Word(Parsable):
         self.length = 0
         self.word = ''
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
         data = {'class': self}
         length = 0
         try:
@@ -234,13 +234,13 @@ class Joined(Parsable):
                               '+'.join(texts))
 
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
         data = {'class': self,
                 'parts': []}
 
         total_length = 0
         for part in self.parts:
-            length, part_data = part.read(text, position + total_length)
+            length, part_data = part.parse(text, position + total_length)
             total_length += length
             data['parts'].append(part_data)
 
@@ -248,6 +248,24 @@ class Joined(Parsable):
 
     def output(self, data, clean=False):
         return ''.join(p['class'].output(p, clean) for p in data['parts'])
+
+class NamedJoin(Joined):
+    ''' join a group of things, giving them names along the way. '''
+    def parse(self, text, position=0):
+        data = {'class': self,
+                'parts': {}}
+        total_length = 0
+        for name, part in self.parts:
+            length, part_data = part.parse(text, position + total_length)
+            total_length += length
+            data['parts'][name] = part_data
+
+        return total_length, data
+
+    def output(self, data, clean=False):
+        return ''.join(data['parts'][p]['class'].output(p, clean) for p in data['parts'])
+
+
 
 class Multiple(Joined):
     ''' accept multiple of a parsable. '''
@@ -265,13 +283,13 @@ class Multiple(Joined):
             return self.__class__.__name__
 
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
 
         data = {'class': self, 'parts': []}
         i = 0
         while True:
             try:
-                part_length, part_data = self.original.read(text, position + i)
+                part_length, part_data = self.original.parse(text, position + i)
                 if part_length == 0:
                     # should we add the last Nothing item?
                     break
@@ -294,7 +312,7 @@ class Until(Parsable):
         self.ending_length = len(ending)
         self.fail_on_eof = fail_on_eof
 
-    def read(self, text, position=0):
+    def parse(self, text, position=0):
         data = {'class': self}
         i = -1
         end = len(text) - position
@@ -324,11 +342,10 @@ LETTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 NUMBERS = '1234567890'
 SPACES = ' \t'
 
-def output(parsed_block, clean=False):
+def output(parsed, clean=False):
     ''' go through a parsed tree, and output each thing as it thinks it should
         be done.  If the parse was successful, then you should probably end up
         with the same as you put in. '''
-    _, parsed = parsed_block
 
     return parsed['class'].output(parsed, clean)
 
@@ -339,7 +356,7 @@ def pretty_print(parsed_block, level=0):
     if type(parsed_block) == tuple:
         count, parsed_block = parsed_block
         print indent + '%i chars parsed.' % count
-        print output((count, parsed_block))
+        print output(parsed_block)
         pretty_print(parsed_block)
     else:
         print indent + parsed_block['class'].__class__.__name__ + ':' +  \

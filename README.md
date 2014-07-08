@@ -23,6 +23,7 @@ Nothing       | always matches, but consumes 0 characters.
 Joined        | Joins two (or more) other parsables into a single unit.
 Either        | Matches any 1 of a selection of parsables
 Multiple      | Matches a parsable multiple (or 0, if you want) times.
+NamedJoin     | Like a join, but parsed elements are stored in a dict, rather than list.
 
 ## Conceptual usage:
 
@@ -37,7 +38,7 @@ You put together Parsable groups using the above primitives:
 You can then attempt to parse these:
 
 ```python
-    DESERTS.read("Chocolate-cake")
+    DESERTS.parse("Chocolate-cake")
 ```
 
 and it will return a tuple: `(chars_read, dict of parsed parts)`:
@@ -59,14 +60,14 @@ control mechanism which allows `Either`, `Joined`, `Multiple` etc. to work.
 
 ```python
     >>> ME = SpecificWord('Daniel')
-    >>> p = ME.read("Daniel")
+    >>> p = ME.parse("Daniel")
     >>> p
     (6, {'text': 'Daniel', 'class': <SpecificWord:"Daniel">})
 
     >>> output(p[1])
     "Daniel"
 
-    >>> ME.read("Becky")
+    >>> ME.parse("Becky")
     Traceback (most recent call last):
     ...
     pc.NotHere: Expected "Daniel", instead found: "Becky"
@@ -81,7 +82,7 @@ And a more complex example:
 
     >>> SENTENCE = Joined(NOUN, SPACES, VERB, SPACES, NOUN)
 
-    >>> a = SENTENCE.read("cat gives    book")
+    >>> a = SENTENCE.parse("cat gives    book")
     >>> a
     (18, {"class": <Joined>, "parts": [
             {"text": "cat", "class": <SpecificWord:"cat">},
@@ -91,7 +92,7 @@ And a more complex example:
             {"text": "book", "class": <SpecificWord:"book">}
          ]})
 
-    >>> output(a)
+    >>> output(a[1])
     "cat gives    book"
 ```
 
