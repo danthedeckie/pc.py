@@ -96,6 +96,47 @@ And a more complex example:
     "cat gives    book"
 ```
 
+And the `NamedJoin` (initially):
+
+```python
+    WS = Word(SPACES)
+    WORD = Word(LETTERS)
+
+    ARTICLES = Either(SpecificWord('the'), SpecificWord('a'), SpecificWord('an'))
+
+    VERBS = Either(SpecificWord('have'), SpecificWord('go to'), SpecificWord('eat'))
+
+    SENTENCE = NamedJoin(
+        ('subject', Joined(Optional(Joined(ARTICLES, WS)), WORD)),
+        ('sub_sp', WS),
+        ('verb', VERBS),
+        ('verb_sp', WS),
+        ('object', Joined(Optional(Joined(ARTICLES, WS)), WORD)),
+        ('punctuation', Word('.?!'))
+        )
+
+    length, munchies = SENTENCE.parse('the cats have  dinner.')
+
+    assert(output(munchies['parts']['subject']) == 'the cats')
+    assert(output(munchies['parts']['verb']) == 'have')
+    assert(output(munchies['parts']['object']) == 'dinner')
+```
+
+This (I'm hoping) will be more useful with parsing function definitions, etc. so
+you'll be able to parse it into a `name`, `args`, `docstring`, `body`, and so on,
+rather than having to walk around the tree after parsing.  This should work well
+where there are optional things, and also where there are things which can be in
+different orders.  Javascript (for instance) can have functions defined:
+
+```javascript
+var foo = function(){ return 42;}
+// or
+function bar() { return 42; }
+```
+
+and you may well want to parse both of them as function definitions, so that you
+can make sure function names have a consistent style throughout a whole project.
+
 ## Building something useful
 
 So, cool, it can parse it all into a tree.  Very nice.  But how can this be used usefully?
