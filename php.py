@@ -79,7 +79,10 @@ COMMENTS_OR_WHITESPACE = Multiple(Either(WHITESPACE, COMMENT))
 def phpitem(actual):
     ''' most php 'things' can be separated by (x) random amount of whitespace,
         or comments.  that's just the way it is... '''
-    return Joined(COMMENTS_OR_WHITESPACE, actual, COMMENTS_OR_WHITESPACE)
+    return NamedJoin(
+        ('before', COMMENTS_OR_WHITESPACE),
+        ('thing', actual),
+        ('after', COMMENTS_OR_WHITESPACE))
 
 class PHPJoin(Joined):
     ''' wrap a list of otherwise sensible parsers in PHPItem(s). '''

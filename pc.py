@@ -256,6 +256,8 @@ class NamedJoin(Joined):
                 'parts': {}}
         total_length = 0
         for name, part in self.parts:
+            if type(part) == str:
+                part = SpecificWord(part)
             length, part_data = part.parse(text, position + total_length)
             total_length += length
             data['parts'][name] = part_data
@@ -263,8 +265,15 @@ class NamedJoin(Joined):
         return total_length, data
 
     def output(self, data, clean=False):
-        return ''.join(data['parts'][p]['class'].output(p, clean) for p in data['parts'])
+        to_return = []
+        for k, v in self.parts:
+            if k in data['parts']:
+                to_return.append(data['parts'][k]['class'].output(data['parts'][k], clean))
 
+        return ''.join(to_return)
+
+    def __repr__(self):
+        return '<NamedJoin:(%s)>' % ('+'.join([k for k,v in self.parts]))
 
 
 class Multiple(Joined):
